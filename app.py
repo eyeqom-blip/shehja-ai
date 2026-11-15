@@ -110,7 +110,7 @@ def get_config():
     cfg = {k: v for k, v in rows}
     return {
         "provider": cfg.get("provider", "demo"), "model": cfg.get("model", "gemini-3.5-flash-lite"),
-        "api_key": cfg.get("api_key", ""), "admin_pin": os.environ.get("SHEHJA_PIN") or cfg.get("admin_pin", "1234"),
+        "api_key": cfg.get("api_key", ""), "admin_pin": cfg.get("admin_pin") or os.environ.get("SHEHJA_PIN", "1234"),
         "custom_prompt": cfg.get("custom_prompt", ""),
     }
 
