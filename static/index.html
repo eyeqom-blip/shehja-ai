@@ -432,128 +432,7 @@
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("loginEmail").value.trim(), password: document.getElementById("loginPass").value }) });
       const d = await res.json();
       if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
-      isGuest = false; await     // Hands-Free Live Talk Mode
-    let isLiveTalk = false, isAiSpeaking = false, liveRec = null, gotFinalSpeech = false;
-    const liveAudio = new Audio();
-
-    function setLiveStatus(txt) {
-      const el = document.getElementById("liveStatus");
-      if (el) el.textContent = txt;
-    }
-
-    function toggleLiveTalk() {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { alert("Live Talk ke liye Android/PC Chrome browser use karein."); return; }
-      isLiveTalk = !isLiveTalk;
-      const btn = document.getElementById("liveTalkBtn");
-      const ban = document.getElementById("liveBanner");
-      if (isLiveTalk) {
-        // Unlock mobile browser audio on user click
-        liveAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-        liveAudio.play().catch(() => {});
-        btn.classList.add("on"); btn.textContent = "📞 Live ON";
-        ban.style.display = "flex";
-        startLiveListening();
-      } else {
-        stopAllLive();
-      }
-    }
-
-    function stopAllLive() {
-      isLiveTalk = false; isAiSpeaking = false;
-      const btn = document.getElementById("liveTalkBtn");
-      const ban = document.getElementById("liveBanner");
-      if (btn) { btn.classList.remove("on"); btn.textContent = "📞 Live"; }
-      if (ban) ban.style.display = "none";
-      if (liveRec) { try { liveRec.abort(); } catch (e) {} liveRec = null; }
-      liveAudio.pause();
-      window.speechSynthesis.cancel();
-    }
-
-    function interruptAndListen() {
-      if (!isLiveTalk) return;
-      isAiSpeaking = false;
-      liveAudio.pause();
-      window.speechSynthesis.cancel();
-      document.querySelectorAll(".speak-btn").forEach(b => { b.dataset.playing = "0"; b.textContent = "🔊 Suno"; });
-      startLiveListening();
-    }
-
-    function startLiveListening() {
-      if (!isLiveTalk || isGenerating || isAiSpeaking) return;
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return;
-      if (liveRec) { try { liveRec.abort(); } catch (e) {} }
-      gotFinalSpeech = false;
-      liveRec = new SR();
-      liveRec.lang = "hi-IN";
-      liveRec.interimResults = true;
-      liveRec.continuous = false;
-      liveRec.onstart = () => { setLiveStatus("🎙️ Sun rahi hoon... (Boliye)"); };
-      liveRec.onresult = (e) => {
-        let interim = "", finalTxt = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) finalTxt += e.results[i][0].transcript;
-          else interim += e.results[i][0].transcript;
-        }
-        const combined = (finalTxt || interim).trim();
-        if (combined) {
-          promptInput.value = combined;
-          promptInput.dispatchEvent(new Event("input"));
-        }
-        if (finalTxt.trim()) {
-          gotFinalSpeech = true;
-          setLiveStatus("💭 Soch rahi hoon...");
-          try { liveRec.stop(); } catch (err) {}
-          sendMessage();
-        }
-      };
-      liveRec.onerror = (e) => {
-        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-          alert("Mic permission allow karein!");
-          stopAllLive();
-        }
-      };
-      liveRec.onend = () => {
-        if (isLiveTalk && !gotFinalSpeech && !isGenerating && !isAiSpeaking) {
-          setTimeout(startLiveListening, 400);
-        }
-      };
-      try { liveRec.start(); } catch (e) {}
-    }
-
-    async function autoSpeakAndLoop(btn, rawText) {
-      if (!isLiveTalk) return;
-      isAiSpeaking = true;
-      setLiveStatus("🔊 Jawab bol rahi hoon...");
-      if (btn) { btn.dataset.playing = "1"; btn.textContent = "⏹️ Roko"; }
-      const finishSpeak = () => {
-        isAiSpeaking = false;
-        if (btn) { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; }
-        if (isLiveTalk) setTimeout(startLiveListening, 450);
-      };
-      try {
-        const res = await fetch("/api/tts", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: rawText, persona: document.getElementById("personaSelect").value, tone: document.getElementById("voiceTone").value })
-        });
-        if (!res.ok) throw new Error("fallback");
-        const blob = await res.blob(), url = URL.createObjectURL(blob);
-        liveAudio.src = url;
-        liveAudio.onended = () => { URL.revokeObjectURL(url); finishSpeak(); };
-        liveAudio.onerror = finishSpeak;
-        await liveAudio.play();
-      } catch (e) {
-        const tick = String.fromCharCode(96);
-        const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
-        const u = new SpeechSynthesisUtterance(clean);
-        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
-        u.onend = finishSpeak; u.onerror = finishSpeak;
-        window.speechSynthesis.speak(u);
-      }
-    }
-
-    initSession();
+      isGuest = false; await initSession();
     }
     async function doSignup() {
       const err = document.getElementById("regErr"); err.style.display = "none";
@@ -734,7 +613,7 @@
     function copyParent(btn, sel) { navigator.clipboard.writeText(btn.closest(".code-block,.blackboard").querySelector(sel).textContent); btn.textContent = "Copied!"; setTimeout(() => (btn.textContent = "Copy"), 1500); }
     function exportPdf(text) {
       const w = window.open("", "_blank");
-      w.document.write("<html><head><title>SR Notes PDF</title><style>body{font-family:Arial,sans-serif;padding:28px;line-height:1.65;color:#111}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}</style></head><body><h2>Shehja SR — Study Notes</h2><hr/>" + formatMarkdown(text) + "<script>window.print();<\/script></body></html>");
+      w.document.write("<html><head><title>SR Notes PDF</title><style>body{font-family:Arial,sans-serif;padding:28px;line-height:1.65;color:#111}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}</style></head><body><h2>Shehja SR — Study Notes</h2><hr/>" + formatMarkdown(text) + "<scr" + "ipt>window.print();</scr" + "ipt></body></html>");
       w.document.close();
     }
 
@@ -953,6 +832,128 @@
       const d = await res.json(); if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
       closeModal("settingsModal"); alert("✅ Settings Saved!");
     }
+
+    // Hands-Free Live Talk Mode
+    let isLiveTalk = false, isAiSpeaking = false, liveRec = null, gotFinalSpeech = false;
+    const liveAudio = new Audio();
+
+    function setLiveStatus(txt) {
+      const el = document.getElementById("liveStatus");
+      if (el) el.textContent = txt;
+    }
+
+    function toggleLiveTalk() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { alert("Live Talk ke liye Android/PC Chrome browser use karein."); return; }
+      isLiveTalk = !isLiveTalk;
+      const btn = document.getElementById("liveTalkBtn");
+      const ban = document.getElementById("liveBanner");
+      if (isLiveTalk) {
+        // Unlock mobile browser audio on user click
+        liveAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+        liveAudio.play().catch(() => {});
+        btn.classList.add("on"); btn.textContent = "📞 Live ON";
+        ban.style.display = "flex";
+        startLiveListening();
+      } else {
+        stopAllLive();
+      }
+    }
+
+    function stopAllLive() {
+      isLiveTalk = false; isAiSpeaking = false;
+      const btn = document.getElementById("liveTalkBtn");
+      const ban = document.getElementById("liveBanner");
+      if (btn) { btn.classList.remove("on"); btn.textContent = "📞 Live"; }
+      if (ban) ban.style.display = "none";
+      if (liveRec) { try { liveRec.abort(); } catch (e) {} liveRec = null; }
+      liveAudio.pause();
+      window.speechSynthesis.cancel();
+    }
+
+    function interruptAndListen() {
+      if (!isLiveTalk) return;
+      isAiSpeaking = false;
+      liveAudio.pause();
+      window.speechSynthesis.cancel();
+      document.querySelectorAll(".speak-btn").forEach(b => { b.dataset.playing = "0"; b.textContent = "🔊 Suno"; });
+      startLiveListening();
+    }
+
+    function startLiveListening() {
+      if (!isLiveTalk || isGenerating || isAiSpeaking) return;
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      if (liveRec) { try { liveRec.abort(); } catch (e) {} }
+      gotFinalSpeech = false;
+      liveRec = new SR();
+      liveRec.lang = "hi-IN";
+      liveRec.interimResults = true;
+      liveRec.continuous = false;
+      liveRec.onstart = () => { setLiveStatus("🎙️ Sun rahi hoon... (Boliye)"); };
+      liveRec.onresult = (e) => {
+        let interim = "", finalTxt = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) finalTxt += e.results[i][0].transcript;
+          else interim += e.results[i][0].transcript;
+        }
+        const combined = (finalTxt || interim).trim();
+        if (combined) {
+          promptInput.value = combined;
+          promptInput.dispatchEvent(new Event("input"));
+        }
+        if (finalTxt.trim()) {
+          gotFinalSpeech = true;
+          setLiveStatus("💭 Soch rahi hoon...");
+          try { liveRec.stop(); } catch (err) {}
+          sendMessage();
+        }
+      };
+      liveRec.onerror = (e) => {
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          alert("Mic permission allow karein!");
+          stopAllLive();
+        }
+      };
+      liveRec.onend = () => {
+        if (isLiveTalk && !gotFinalSpeech && !isGenerating && !isAiSpeaking) {
+          setTimeout(startLiveListening, 400);
+        }
+      };
+      try { liveRec.start(); } catch (e) {}
+    }
+
+    async function autoSpeakAndLoop(btn, rawText) {
+      if (!isLiveTalk) return;
+      isAiSpeaking = true;
+      setLiveStatus("🔊 Jawab bol rahi hoon...");
+      if (btn) { btn.dataset.playing = "1"; btn.textContent = "⏹️ Roko"; }
+      const finishSpeak = () => {
+        isAiSpeaking = false;
+        if (btn) { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; }
+        if (isLiveTalk) setTimeout(startLiveListening, 450);
+      };
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: rawText, persona: document.getElementById("personaSelect").value, tone: document.getElementById("voiceTone").value })
+        });
+        if (!res.ok) throw new Error("fallback");
+        const blob = await res.blob(), url = URL.createObjectURL(blob);
+        liveAudio.src = url;
+        liveAudio.onended = () => { URL.revokeObjectURL(url); finishSpeak(); };
+        liveAudio.onerror = finishSpeak;
+        await liveAudio.play();
+      } catch (e) {
+        const tick = String.fromCharCode(96);
+        const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
+        u.onend = finishSpeak; u.onerror = finishSpeak;
+        window.speechSynthesis.speak(u);
+      }
+    }
+
 
     initSession();
   </script>
