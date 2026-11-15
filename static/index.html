@@ -120,6 +120,11 @@
     @keyframes b{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
     .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20}
     @media(max-width:768px){.sidebar{position:fixed;top:0;bottom:0;left:0;transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.overlay.open{display:block}.menu-btn{display:block}.suggestions{grid-template-columns:1fr}}
+      .live-pill{background:linear-gradient(135deg,#10a37f,#2563eb);color:#fff;border:none;border-radius:8px;padding:5px 9px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .live-pill.on{background:#ef4444;animation:pulseLive 1.4s infinite}
+    @keyframes pulseLive{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+    .live-banner{width:100%;max-width:780px;display:none;align-items:center;justify-content:space-between;gap:8px;background:#132a24;border:1px solid #10a37f;border-radius:12px;padding:8px 12px;margin-bottom:8px;font-size:12.5px;color:#a7f3d0}
+    .live-banner button{background:#1f2937;color:#fff;border:1px solid #374151;border-radius:8px;padding:4px 9px;font-size:11.5px;cursor:pointer}
   </style>
 </head>
 <body data-theme="shehja">
@@ -209,6 +214,7 @@
       </div>
       <div class="topbar-right">
         <button class="tool-pill" id="groupToggle" onclick="toggleGroup()">🤝 Group</button>
+        <button class="live-pill" id="liveTalkBtn" onclick="toggleLiveTalk()">📞 Live</button>
         <button class="focus-pill" id="focusBtn" onclick="openFocusModal()">⏱️ Focus</button>
       </div>
     </header>
@@ -237,6 +243,7 @@
     </div>
 
     <div class="input-area">
+      <div class="live-banner" id="liveBanner"><span id="liveStatus">🎙️ Sun rahi hoon... (Boliye)</span><div style="display:flex;gap:6px;"><button onclick="interruptAndListen()">🎙️ Abhi Bolo</button><button onclick="toggleLiveTalk()">⏹️ Band</button></div></div>
       <div class="toolbar-row">
         <button class="tool-pill" onclick="openPptModal()">📊 PPT</button>
         <button class="tool-pill" onclick="openXlsxModal()">📗 Excel</button>
@@ -425,7 +432,128 @@
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("loginEmail").value.trim(), password: document.getElementById("loginPass").value }) });
       const d = await res.json();
       if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
-      isGuest = false; await initSession();
+      isGuest = false; await     // Hands-Free Live Talk Mode
+    let isLiveTalk = false, isAiSpeaking = false, liveRec = null, gotFinalSpeech = false;
+    const liveAudio = new Audio();
+
+    function setLiveStatus(txt) {
+      const el = document.getElementById("liveStatus");
+      if (el) el.textContent = txt;
+    }
+
+    function toggleLiveTalk() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { alert("Live Talk ke liye Android/PC Chrome browser use karein."); return; }
+      isLiveTalk = !isLiveTalk;
+      const btn = document.getElementById("liveTalkBtn");
+      const ban = document.getElementById("liveBanner");
+      if (isLiveTalk) {
+        // Unlock mobile browser audio on user click
+        liveAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+        liveAudio.play().catch(() => {});
+        btn.classList.add("on"); btn.textContent = "📞 Live ON";
+        ban.style.display = "flex";
+        startLiveListening();
+      } else {
+        stopAllLive();
+      }
+    }
+
+    function stopAllLive() {
+      isLiveTalk = false; isAiSpeaking = false;
+      const btn = document.getElementById("liveTalkBtn");
+      const ban = document.getElementById("liveBanner");
+      if (btn) { btn.classList.remove("on"); btn.textContent = "📞 Live"; }
+      if (ban) ban.style.display = "none";
+      if (liveRec) { try { liveRec.abort(); } catch (e) {} liveRec = null; }
+      liveAudio.pause();
+      window.speechSynthesis.cancel();
+    }
+
+    function interruptAndListen() {
+      if (!isLiveTalk) return;
+      isAiSpeaking = false;
+      liveAudio.pause();
+      window.speechSynthesis.cancel();
+      document.querySelectorAll(".speak-btn").forEach(b => { b.dataset.playing = "0"; b.textContent = "🔊 Suno"; });
+      startLiveListening();
+    }
+
+    function startLiveListening() {
+      if (!isLiveTalk || isGenerating || isAiSpeaking) return;
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      if (liveRec) { try { liveRec.abort(); } catch (e) {} }
+      gotFinalSpeech = false;
+      liveRec = new SR();
+      liveRec.lang = "hi-IN";
+      liveRec.interimResults = true;
+      liveRec.continuous = false;
+      liveRec.onstart = () => { setLiveStatus("🎙️ Sun rahi hoon... (Boliye)"); };
+      liveRec.onresult = (e) => {
+        let interim = "", finalTxt = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) finalTxt += e.results[i][0].transcript;
+          else interim += e.results[i][0].transcript;
+        }
+        const combined = (finalTxt || interim).trim();
+        if (combined) {
+          promptInput.value = combined;
+          promptInput.dispatchEvent(new Event("input"));
+        }
+        if (finalTxt.trim()) {
+          gotFinalSpeech = true;
+          setLiveStatus("💭 Soch rahi hoon...");
+          try { liveRec.stop(); } catch (err) {}
+          sendMessage();
+        }
+      };
+      liveRec.onerror = (e) => {
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          alert("Mic permission allow karein!");
+          stopAllLive();
+        }
+      };
+      liveRec.onend = () => {
+        if (isLiveTalk && !gotFinalSpeech && !isGenerating && !isAiSpeaking) {
+          setTimeout(startLiveListening, 400);
+        }
+      };
+      try { liveRec.start(); } catch (e) {}
+    }
+
+    async function autoSpeakAndLoop(btn, rawText) {
+      if (!isLiveTalk) return;
+      isAiSpeaking = true;
+      setLiveStatus("🔊 Jawab bol rahi hoon...");
+      if (btn) { btn.dataset.playing = "1"; btn.textContent = "⏹️ Roko"; }
+      const finishSpeak = () => {
+        isAiSpeaking = false;
+        if (btn) { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; }
+        if (isLiveTalk) setTimeout(startLiveListening, 450);
+      };
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: rawText, persona: document.getElementById("personaSelect").value, tone: document.getElementById("voiceTone").value })
+        });
+        if (!res.ok) throw new Error("fallback");
+        const blob = await res.blob(), url = URL.createObjectURL(blob);
+        liveAudio.src = url;
+        liveAudio.onended = () => { URL.revokeObjectURL(url); finishSpeak(); };
+        liveAudio.onerror = finishSpeak;
+        await liveAudio.play();
+      } catch (e) {
+        const tick = String.fromCharCode(96);
+        const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
+        u.onend = finishSpeak; u.onerror = finishSpeak;
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    initSession();
     }
     async function doSignup() {
       const err = document.getElementById("regErr"); err.style.display = "none";
@@ -686,6 +814,7 @@
         if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
         chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();
         aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
+        if (isLiveTalk) { autoSpeakAndLoop(aiC.querySelector(".speak-btn"), data.reply); }
       } catch (err) { aiB.innerHTML = "<p style='color:#f87171;'>⚠️ " + escapeHtml(err.message) + "</p>"; }
       finally { isGenerating = false; sendBtn.disabled = false; scrollToBottom(); }
     }
