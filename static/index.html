@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#10a37f" />
+  <link rel="manifest" href="/manifest.json?v=3" />
+  <link rel="icon" href="/icon-192.png?v=3" type="image/png" />
+  <link rel="apple-touch-icon" href="/icon-192.png?v=3" />
+  <title>Shehja — SR</title>
+  <style>
+    :root{--bg:#16181d;--sb:#101216;--in:#23262f;--hv:#262a34;--bd:#323744;--tx:#eef1f6;--mt:#9aa3b2;--ac:#10a37f;--ac2:#2563eb;--dn:#ef4444}
+    body[data-theme="ansh"]{--ac:#2563eb;--ac2:#38bdf8}
+    body[data-theme="armaan"]{--ac:#06b6d4;--ac2:#6366f1}
+    body[data-theme="rayan"]{--ac:#8b5cf6;--ac2:#f59e0b}
+    body[data-theme="vadil"]{--ac:#d97706;--ac2:#10a37f}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);height:100dvh;display:flex;overflow:hidden;transition:background .3s}
+    .auth-gate{position:fixed;inset:0;background:radial-gradient(circle at top,#0f2d27,#0b0d12 70%);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+    .auth-card{background:#181b22;border:1px solid #2d3340;border-radius:20px;width:100%;max-width:420px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+    .auth-head{text-align:center;margin-bottom:16px}
+    .auth-head img{width:64px;height:64px;border-radius:16px;margin-bottom:8px;box-shadow:0 6px 20px rgba(16,185,129,.3)}
+    .auth-head h1{font-size:22px;margin-bottom:4px}
+    .auth-head p{font-size:13px;color:var(--mt)}
+    .guest-btn{width:100%;margin-top:12px;padding:10px;border-radius:10px;border:1px dashed #475569;background:transparent;color:#cbd5e1;font-size:13px;cursor:pointer}
+    .guest-btn:hover{background:#222631;color:#fff}
+    .sidebar{width:265px;background:var(--sb);display:flex;flex-direction:column;border-right:1px solid #222630;transition:transform .25s ease;z-index:30}
+    .sidebar-header{padding:14px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;user-select:none}
+    .brand-sub{font-size:11px;color:var(--mt);font-weight:400;display:block}
+    .new-chat-btn{margin:0 12px 10px;padding:10px 14px;background:transparent;border:1px solid var(--bd);color:var(--tx);border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px}
+    .new-chat-btn:hover{background:var(--hv)}
+    .chat-list{flex:1;overflow-y:auto;padding:4px 10px}
+    .chat-item{padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13px;color:#d1d5db;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+    .chat-item:hover,.chat-item.active{background:var(--hv);color:#fff}
+    .chat-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+    .del-btn{background:none;border:none;color:var(--mt);cursor:pointer;font-size:13px;padding:2px 5px}
+    .sidebar-footer{padding:12px;border-top:1px solid #222630;display:flex;flex-direction:column;gap:8px}
+    .side-btn{width:100%;padding:9px 12px;background:transparent;border:1px solid var(--bd);color:var(--tx);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+    .mode-badge{font-size:11px;padding:2px 8px;border-radius:99px;background:rgba(16,163,127,.2);color:#34d399}
+    .main{flex:1;display:flex;flex-direction:column;height:100%;min-width:0}
+    .topbar{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #242834;gap:8px}
+    .topbar-left{display:flex;align-items:center;gap:8px;min-width:0}
+    .topbar-right{display:flex;align-items:center;gap:6px}
+    .menu-btn{display:none;background:none;border:none;color:var(--tx);font-size:22px;cursor:pointer}
+    .persona-select{background:#222631;color:var(--tx);border:1px solid var(--ac);border-radius:9px;padding:6px 9px;font-size:12.5px;font-weight:600;outline:none;cursor:pointer}
+    .focus-pill{background:#222631;color:#fcd34d;border:1px solid #f59e0b;border-radius:8px;padding:5px 8px;font-size:11.5px;cursor:pointer;white-space:nowrap}
+    .edu-bar{display:none;background:#131c2e;border-bottom:1px solid #243452;padding:7px 12px;gap:6px;flex-wrap:wrap;align-items:center}
+    .edu-bar select,.edu-bar input{background:#0d1320;border:1px solid #2e4268;color:#e2e8f0;border-radius:7px;padding:4px 7px;font-size:11.5px;outline:none}
+    .edu-bar label{font-size:11.5px;color:#93c5fd;display:flex;align-items:center;gap:4px}
+    .chat-container{flex:1;overflow-y:auto;padding:18px 12px;display:flex;flex-direction:column;align-items:center}
+    .welcome{margin:auto;text-align:center;max-width:620px;padding:12px}
+    .welcome h1{font-size:24px;margin-bottom:8px}
+    .welcome p{color:var(--mt);font-size:14px;margin-bottom:18px;line-height:1.5}
+    .suggestions{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;text-align:left}
+    .suggestion-card{background:#1f232c;border:1px solid var(--bd);padding:11px 13px;border-radius:12px;cursor:pointer;font-size:13px;color:#d4d8e2}
+    .suggestion-card:hover{border-color:var(--ac)}
+    .messages-wrap{width:100%;max-width:780px;display:flex;flex-direction:column;gap:18px}
+    .msg-row{display:flex;gap:10px;width:100%}
+    .msg-row.user{justify-content:flex-end}
+    .avatar{width:32px;height:32px;border-radius:9px;flex-shrink:0;overflow:hidden}
+    .msg-col{display:flex;flex-direction:column;gap:6px;max-width:88%;min-width:0}
+    .msg-row.ai .msg-col{flex:1;max-width:100%}
+    .msg-bubble{line-height:1.66;font-size:15px;word-wrap:break-word}
+    .msg-row.user .msg-bubble{background:var(--in);padding:10px 14px;border-radius:16px;border:1px solid var(--bd)}
+    .msg-row.ai .msg-bubble{background:#1b1e26;padding:12px 14px;border-radius:16px;border:1px solid #282c38}
+    .msg-img{max-width:240px;max-height:220px;border-radius:12px;border:1px solid var(--bd);margin-bottom:6px;display:block}
+    .msg-actions{display:flex;gap:6px;align-items:center;margin-top:2px;flex-wrap:wrap}
+    .act-btn{background:#232732;border:1px solid var(--bd);color:#d1d5db;font-size:11.5px;padding:3px 9px;border-radius:99px;cursor:pointer;text-decoration:none}
+    .act-btn:hover{border-color:var(--ac);color:#fff}
+    .blackboard{background:radial-gradient(circle at center,#143a27,#0c2418);border:6px solid #6b4423;border-radius:12px;padding:14px;margin:10px 0;color:#f1f5f9;font-family:ui-monospace,monospace;font-size:13.5px;line-height:1.55;box-shadow:inset 0 0 24px rgba(0,0,0,.5)}
+    .bb-hdr{font-size:11px;color:#86efac;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between}
+    .msg-bubble h2,.msg-bubble h3,.msg-bubble h4{margin:10px 0 5px;color:#fff}
+    .msg-bubble p{margin-bottom:9px}.msg-bubble p:last-child{margin-bottom:0}
+    .msg-bubble a{color:#38bdf8;text-decoration:underline}
+    .msg-bubble code{background:#101218;padding:2px 6px;border-radius:5px;font-family:ui-monospace,monospace;font-size:13.5px;color:#f472b6}
+    .code-block{background:#0b0d12;border:1px solid #2b303c;border-radius:10px;margin:10px 0;overflow:hidden}
+    .code-header{background:#151821;padding:6px 12px;font-size:12px;color:var(--mt);display:flex;justify-content:space-between;align-items:center}
+    .copy-btn{background:none;border:none;color:#d4d4d4;cursor:pointer;font-size:12px}
+    .code-block pre{padding:12px;overflow-x:auto;font-family:ui-monospace,monospace;font-size:13.5px;line-height:1.5;color:#e5e7eb}
+    .export-card{background:#172226;border:1px solid var(--ac);border-radius:12px;padding:12px;margin-top:6px}
+    .dl-btn{display:inline-block;margin-top:8px;padding:9px 14px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px;border:none;cursor:pointer}
+    .input-area{padding:8px 12px 10px;display:flex;flex-direction:column;align-items:center;border-top:1px solid #222630}
+    .toolbar-row{width:100%;max-width:780px;display:flex;align-items:center;gap:5px;margin-bottom:7px;flex-wrap:wrap}
+    .tool-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:99px;font-size:11.5px;border:1px solid var(--bd);background:#20242e;color:#d4d8e2;cursor:pointer}
+    .tool-pill.active{background:rgba(16,163,127,.22);border-color:var(--ac);color:#34d399}
+    .voice-select{background:#20242e;color:#d4d8e2;border:1px solid var(--bd);border-radius:99px;padding:4px 7px;font-size:11px;outline:none}
+    .img-preview-bar{width:100%;max-width:780px;display:none;align-items:center;gap:10px;background:#20242e;border:1px solid var(--bd);border-radius:12px;padding:7px 12px;margin-bottom:7px}
+    .img-preview-bar img{width:44px;height:44px;object-fit:cover;border-radius:8px}
+    .img-preview-bar span{font-size:12px;color:#d4d4d4;flex:1}
+    .input-box{width:100%;max-width:780px;background:var(--in);border:1px solid var(--bd);border-radius:20px;padding:7px 10px;display:flex;align-items:flex-end;gap:7px}
+    .input-box textarea{flex:1;background:transparent;border:none;outline:none;color:var(--tx);font-size:15px;font-family:inherit;resize:none;max-height:140px;line-height:1.5;padding:4px 2px}
+    .icon-btn{width:34px;height:34px;border-radius:50%;border:none;background:#353a47;color:#fff;cursor:pointer;font-size:15px;display:grid;place-items:center;flex-shrink:0}
+    .icon-btn.recording{background:var(--dn)}
+    .send-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--ac);color:#fff;cursor:pointer;font-size:16px;font-weight:bold;flex-shrink:0}
+    .send-btn:disabled{opacity:.35;cursor:not-allowed}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:90;padding:14px}
+    .modal-backdrop.open{display:grid}
+    .modal{background:#1b1f27;border:1px solid var(--bd);border-radius:16px;width:100%;max-width:440px;padding:18px;max-height:90dvh;overflow-y:auto}
+    .modal h2{font-size:17px;margin-bottom:12px}
+    .tabs{display:flex;gap:6px;margin-bottom:12px}
+    .tab-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--bd);background:#12151b;color:var(--mt);cursor:pointer;font-size:12px;font-weight:600}
+    .tab-btn.active{background:var(--ac);color:#fff;border-color:var(--ac)}
+    .form-group{margin-bottom:10px}
+    .form-group label{display:block;font-size:12px;color:var(--mt);margin-bottom:4px}
+    .form-group select,.form-group input,.form-group textarea{width:100%;padding:9px 11px;background:#101318;border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:13.5px;font-family:inherit}
+    .error-msg{color:#f87171;font-size:12.5px;margin-top:6px;display:none}
+    .ok-msg{color:#34d399;font-size:12.5px;margin-top:6px;display:none}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+    .btn-secondary{padding:8px 14px;background:transparent;border:1px solid var(--bd);color:var(--tx);border-radius:8px;cursor:pointer}
+    .btn-primary{padding:8px 14px;background:var(--ac);border:none;color:#fff;border-radius:8px;cursor:pointer;font-weight:600}
+    .scifi-modal{background:linear-gradient(160deg,#090f1a,#0d1b2a);border:1px solid #06b6d4;box-shadow:0 0 30px rgba(6,182,212,.25)}
+    .calc-screen{background:#030712;border:1px solid #0891b2;border-radius:12px;padding:12px;margin-bottom:10px;text-align:right;box-shadow:inset 0 0 15px rgba(6,182,212,.15)}
+    .calc-expr{font-size:13px;color:#67e8f9;min-height:18px;word-break:break-all;font-family:monospace}
+    .calc-res{font-size:26px;font-weight:800;color:#22d3ee;margin-top:4px;font-family:monospace;text-shadow:0 0 8px rgba(34,211,238,.4)}
+    .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+    .ck{padding:11px 6px;border-radius:10px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:14px;font-weight:700;cursor:pointer}
+    .ck.op{background:#0c4a6e;color:#38bdf8;border-color:#0284c7}.ck.fn{background:#1e1b4b;color:#c4b5fd;font-size:12.5px}.ck.eq{background:linear-gradient(135deg,#06b6d4,#2563eb);color:#fff;border:none}.ck.ac{background:#450a0a;color:#fca5a5}
+    .typing-dots span{display:inline-block;width:7px;height:7px;margin-right:4px;background:var(--mt);border-radius:50%;animation:b 1.2s infinite ease-in-out}
+    .typing-dots span:nth-child(2){animation-delay:.2s}.typing-dots span:nth-child(3){animation-delay:.4s}
+    @keyframes b{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20}
+    @media(max-width:768px){.sidebar{position:fixed;top:0;bottom:0;left:0;transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.overlay.open{display:block}.menu-btn{display:block}.suggestions{grid-template-columns:1fr}}
+  </style>
+</head>
+<body data-theme="shehja">
+  <div class="auth-gate" id="authGate">
+    <div class="auth-card">
+      <div class="auth-head">
+        <img src="/icon.svg?v=3" alt="SR" />
+        <h1>Shehja AI — SR</h1>
+        <p>Sign In karein taaki aapka data kisi bhi phone ya PC par save rahe</p>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="tab-btn" id="tabSignup" onclick="switchAuthTab('signup')">Sign Up</button>
+        <button class="tab-btn" id="tabForgot" onclick="switchAuthTab('forgot')">Forgot?</button>
+      </div>
+      <div id="paneLogin">
+        <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="aapka@email.com" /></div>
+        <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="Password..." /></div>
+        <div class="error-msg" id="loginErr"></div>
+        <button class="btn-primary" style="width:100%;padding:11px;margin-top:8px;" onclick="doLogin()">Sign In & Open Chat</button>
+      </div>
+      <div id="paneSignup" style="display:none;">
+        <div class="form-group"><label>Full Name</label><input type="text" id="regName" placeholder="Aapka naam..." /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="aapka@email.com" /></div>
+        <div class="form-group"><label>Password (6+ chars)</label><input type="password" id="regPass" placeholder="Password banayein..." /></div>
+        <div class="form-group">
+          <label>Security Question (Password Reset ke liye)</label>
+          <select id="regSecQ">
+            <option value="Aapke pehle school ka naam kya hai?">Aapke pehle school ka naam kya hai?</option>
+            <option value="Aapka favourite city kaunsa hai?">Aapka favourite city kaunsa hai?</option>
+            <option value="Aapke best friend ka naam kya hai?">Aapke best friend ka naam kya hai?</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Secret Answer</label><input type="text" id="regSecA" placeholder="Answer likhein..." /></div>
+        <div class="error-msg" id="regErr"></div>
+        <button class="btn-primary" style="width:100%;padding:11px;margin-top:8px;" onclick="doSignup()">Create Account</button>
+      </div>
+      <div id="paneForgot" style="display:none;">
+        <div class="tabs"><button class="tab-btn active" id="fTabQ" onclick="switchForgotType('q')">🛡️ Security Q</button><button class="tab-btn" id="fTabOtp" onclick="switchForgotType('otp')">📧 Email OTP</button></div>
+        <div class="form-group"><label>Registered Email</label><input type="email" id="fEmail" placeholder="aapka@email.com" /></div>
+        <div id="fBoxQ">
+          <button class="btn-secondary" style="width:100%;margin-bottom:8px;" onclick="fetchSecQuestion()">1. Question Dekhein</button>
+          <div id="fQStep2" style="display:none;">
+            <div class="form-group"><label id="fQLabel" style="color:#93c5fd;"></label><input type="text" id="fSecA" placeholder="Secret answer..." /></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="fNewPassQ" placeholder="Naya password..." /></div>
+            <button class="btn-primary" style="width:100%;" onclick="resetViaQuestion()">2. Reset Password</button>
+          </div>
+        </div>
+        <div id="fBoxOtp" style="display:none;">
+          <button class="btn-secondary" style="width:100%;margin-bottom:8px;" onclick="sendEmailOtp()">1. Email par OTP Bhejein</button>
+          <div class="form-group"><label>6-Digit OTP</label><input type="text" id="fOtpCode" placeholder="OTP..." /></div>
+          <div class="form-group"><label>New Password</label><input type="password" id="fNewPassOtp" placeholder="Naya password..." /></div>
+          <button class="btn-primary" style="width:100%;" onclick="resetViaOtp()">2. Verify & Reset</button>
+        </div>
+        <div class="error-msg" id="fErr"></div>
+        <div class="ok-msg" id="fOk"></div>
+      </div>
+      <button class="guest-btn" onclick="enterGuest()">👤 Continue as Guest (Data save nahi rahega)</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header" onclick="secretLogoTap()">
+      <img src="/icon.svg?v=3" alt="SR" style="width:36px;height:36px;border-radius:10px;flex-shrink:0;" />
+      <div><span>Shehja — SR</span><span class="brand-sub" id="userLabel">Guest Mode</span></div>
+    </div>
+    <button class="new-chat-btn" onclick="startNewChat()"><span>＋</span> Naya Chat</button>
+    <div class="chat-list" id="chatList"></div>
+    <div class="sidebar-footer">
+      <button class="side-btn" id="installBtn" style="display:none;" onclick="installApp()"><span>📲 Install SR App</span><span class="mode-badge">App</span></button>
+      <button class="side-btn" id="authSideBtn" onclick="openAuthGate()"><span>🔐 Sign In / Switch</span><span class="mode-badge">Sync</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
+        <select class="persona-select" id="personaSelect" onchange="onPersonaChange()">
+          <option value="shehja">💬 Shehja (Dost)</option>
+          <option value="ansh">📚 Ansh (Tutor)</option>
+          <option value="armaan">💻 Armaan (Coder)</option>
+          <option value="rayan">🌟 Rayan (All-Rounder)</option>
+          <option value="vadil">🤍 Vadil (Safe Space)</option>
+        </select>
+      </div>
+      <div class="topbar-right">
+        <button class="tool-pill" id="groupToggle" onclick="toggleGroup()">🤝 Group</button>
+        <button class="focus-pill" id="focusBtn" onclick="openFocusModal()">⏱️ Focus</button>
+      </div>
+    </header>
+
+    <div class="edu-bar" id="eduBar">
+      <select id="eduBoard"><option value="CBSE">CBSE</option><option value="GSEB">GSEB</option></select>
+      <select id="eduStd"><option value="Std 8">Std 8</option><option value="Std 9">Std 9</option><option value="Std 10">Std 10</option><option value="Std 11">Std 11</option><option value="Std 12">Std 12</option></select>
+      <select id="eduStream"><option value="Science">Science</option><option value="Commerce">Commerce</option><option value="Arts">Arts</option></select>
+      <input type="text" id="eduSubject" placeholder="Subject (e.g. Maths)" style="width:115px;" />
+      <label><input type="checkbox" id="eduKnowChk" /> 🎓 EduKnow (College+)</label>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome" id="welcomeScreen">
+        <img src="/icon.svg?v=3" alt="SR" onclick="secretLogoTap()" style="width:72px;height:72px;border-radius:18px;margin:0 auto 12px;display:block;box-shadow:0 8px 24px rgba(16,185,129,.3);" />
+        <h1 id="welcomeTitle">Haan ji, main Shehja hoon 🌸</h1>
+        <p id="welcomeDesc">Batao aaj kya haal hai? Kuch padhna ho, code banana ho, mann halka karna ho, ya presentation/notes chahiye — sab milkar karenge!</p>
+        <div class="suggestions">
+          <div class="suggestion-card" onclick="openPptModal()">📊 Unique PPT Banao (.pptx)</div>
+          <div class="suggestion-card" onclick="openStudioModal()">🎨 Image / Video & Song Studio</div>
+          <div class="suggestion-card" onclick="openCalcModal()">🧮 Sci-Fi Student Calculator</div>
+          <div class="suggestion-card" onclick="openXlsxModal()">📗 Excel Sheet Banao (.xlsx)</div>
+        </div>
+      </div>
+      <div class="messages-wrap" id="messagesWrap" style="display:none;"></div>
+    </div>
+
+    <div class="input-area">
+      <div class="toolbar-row">
+        <button class="tool-pill" onclick="openPptModal()">📊 PPT</button>
+        <button class="tool-pill" onclick="openXlsxModal()">📗 Excel</button>
+        <button class="tool-pill" onclick="openStudioModal()">🎨 Studio</button>
+        <button class="tool-pill" onclick="openCalcModal()">🧮 Calc</button>
+        <button class="tool-pill" id="searchToggle" onclick="toggleSearch()">🌐 Search</button>
+        <button class="tool-pill" onclick="document.getElementById('camInput').click()">📸 Cam</button>
+        <button class="tool-pill" onclick="document.getElementById('imgInput').click()">🖼️ Photo</button>
+        <select class="voice-select" id="voiceTone">
+          <option value="auto">🔊 Voice: Smart</option>
+          <option value="soft">🔊 Soft Deep</option>
+          <option value="teacher">🔊 Clear Tutor</option>
+          <option value="energy">🔊 Energetic</option>
+          <option value="calm">🔊 Calm Care</option>
+        </select>
+        <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImagePick(event)" />
+        <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="handleImagePick(event)" />
+      </div>
+      <div class="img-preview-bar" id="imgPreviewBar">
+        <img id="imgPreviewThumb" src="" alt="preview" />
+        <span>Photo ready hai — send karein.</span>
+        <button style="background:none;border:none;color:#f87171;font-size:16px;cursor:pointer;" onclick="clearImage()">✕</button>
+      </div>
+      <div class="input-box">
+        <textarea id="promptInput" rows="1" placeholder="Yahan likhein ya mic dabakar bolein..."></textarea>
+        <button class="icon-btn" id="micBtn" onclick="toggleVoice()">🎙️</button>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="calcModal">
+    <div class="modal scifi-modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 style="margin:0;color:#22d3ee;">🧮 SCI-FI CALCULATOR (DEG)</h2>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="closeModal('calcModal')">✕</button>
+      </div>
+      <div class="calc-screen"><div class="calc-expr" id="calcExpr">0</div><div class="calc-res" id="calcRes">0</div></div>
+      <div class="calc-grid">
+        <button class="ck fn" onclick="calcAdd('sin(')">sin</button><button class="ck fn" onclick="calcAdd('cos(')">cos</button><button class="ck fn" onclick="calcAdd('tan(')">tan</button><button class="ck ac" onclick="calcClear()">AC</button>
+        <button class="ck fn" onclick="calcAdd('log(')">log</button><button class="ck fn" onclick="calcAdd('√(')">√</button><button class="ck fn" onclick="calcAdd('^')">xʸ</button><button class="ck fn" onclick="calcBack()">⌫</button>
+        <button class="ck fn" onclick="calcAdd('(')">(</button><button class="ck fn" onclick="calcAdd(')')">)</button><button class="ck fn" onclick="calcAdd('π')">π</button><button class="ck op" onclick="calcAdd('÷')">÷</button>
+        <button class="ck" onclick="calcAdd('7')">7</button><button class="ck" onclick="calcAdd('8')">8</button><button class="ck" onclick="calcAdd('9')">9</button><button class="ck op" onclick="calcAdd('×')">×</button>
+        <button class="ck" onclick="calcAdd('4')">4</button><button class="ck" onclick="calcAdd('5')">5</button><button class="ck" onclick="calcAdd('6')">6</button><button class="ck op" onclick="calcAdd('-')">−</button>
+        <button class="ck" onclick="calcAdd('1')">1</button><button class="ck" onclick="calcAdd('2')">2</button><button class="ck" onclick="calcAdd('3')">3</button><button class="ck op" onclick="calcAdd('+')">+</button>
+        <button class="ck" onclick="calcAdd('0')">0</button><button class="ck" onclick="calcAdd('.')">.</button><button class="ck fn" onclick="calcAdd('%')">%</button><button class="ck eq" onclick="calcEval()">=</button>
+      </div>
+      <button class="dl-btn" style="width:100%;margin-top:10px;" onclick="askCalcStep()">📚 Ansh se Step-by-Step Samjhao</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="focusModal">
+    <div class="modal">
+      <h2>⏱️ Study Focus Mode</h2>
+      <div class="form-group"><label>Kitne Minute Padhna Hai?</label><select id="focusMins"><option value="15">15 Minutes (Quick Sprint)</option><option value="25" selected>25 Minutes (Pomodoro)</option><option value="45">45 Minutes (Deep Study)</option><option value="60">60 Minutes (Exam Prep)</option></select></div>
+      <div id="focusDisplay" style="font-size:34px;font-weight:800;text-align:center;color:#34d399;margin:14px 0;">25:00</div>
+      <div class="modal-actions"><button class="btn-secondary" onclick="stopFocus()">Reset</button><button class="btn-secondary" onclick="closeModal('focusModal')">Hide</button><button class="btn-primary" onclick="startFocus()">Start Timer</button></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="pptModal">
+    <div class="modal">
+      <h2>📊 Unique PPT Maker (.pptx)</h2>
+      <div class="form-group"><label>Topic</label><input type="text" id="pptTopic" placeholder="e.g. Solar System, AI Ecosystem..." /></div>
+      <div class="form-group"><label>Style</label><select id="pptStyle"><option value="School / College Project">🎓 School / College</option><option value="Professional Corporate Pitch">💼 Professional</option></select></div>
+      <div class="form-group"><label>Slides</label><select id="pptCount"><option value="6">6 Slides</option><option value="8" selected>8 Slides</option><option value="10">10 Slides</option><option value="12">12 Slides</option></select></div>
+      <div class="form-group"><label>Theme</label><select id="pptTheme"><option value="auto" selected>✨ Auto-Unique</option><option value="royal">Royal Blue</option><option value="midnight">Midnight</option><option value="emerald">Emerald</option><option value="sunset">Sunset</option><option value="violet">Violet</option><option value="ocean">Ocean</option></select></div>
+      <div class="form-group"><label>Language</label><select id="pptLang"><option value="English">English</option><option value="Hindi">Hindi</option><option value="Hinglish">Hinglish</option><option value="Gujarati">Gujarati</option></select></div>
+      <div class="error-msg" id="pptError"></div>
+      <div class="modal-actions"><button class="btn-secondary" onclick="closeModal('pptModal')">Cancel</button><button class="btn-primary" id="pptGenBtn" onclick="generatePpt()">✨ Generate PPT</button></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="xlsxModal">
+    <div class="modal">
+      <h2>📗 Excel Sheet Maker (.xlsx)</h2>
+      <div class="form-group"><label>Kis Data ki Excel Sheet Chahiye?</label><input type="text" id="xlsxTopic" placeholder="e.g. Monthly Student Study Timetable, Budget Sheet..." /></div>
+      <div class="error-msg" id="xlsxError"></div>
+      <div class="modal-actions"><button class="btn-secondary" onclick="closeModal('xlsxModal')">Cancel</button><button class="btn-primary" id="xlsxBtn" onclick="generateXlsx()">✨ Generate .XLSX</button></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="studioModal">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 style="margin:0;">🎨 Creator Studio</h2>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="closeModal('studioModal')">✕</button>
+      </div>
+      <div class="tabs"><button class="tab-btn active" id="stTabImg" onclick="switchStudio('img')">🖼️ Image</button><button class="tab-btn" id="stTabVid" onclick="switchStudio('vid')">🎬 Video & Song</button></div>
+      <div id="stBoxImg">
+        <div class="form-group"><label>Image Prompt (Kya banana hai?)</label><textarea id="imgPrompt" rows="2" placeholder="e.g. A glowing futuristic Indian classroom at sunset..."></textarea></div>
+        <div class="form-group"><label>Size</label><select id="imgSize"><option value="1024x1024">Square (1:1)</option><option value="720x1280">Insta/FB Reel (9:16)</option><option value="1280x720">YouTube (16:9)</option></select></div>
+        <div class="error-msg" id="imgErr"></div>
+        <button class="btn-primary" style="width:100%;" id="imgGenBtn" onclick="generateImage()">✨ Create Image</button>
+      </div>
+      <div id="stBoxVid" style="display:none;">
+        <div class="form-group"><label>Video / Song Topic</label><input type="text" id="vidTopic" placeholder="e.g. Motivation for students, Maa song, Tech facts..." /></div>
+        <div class="form-group"><label>Format & Size</label><select id="vidKind"><option value="Insta/FB Reel 30s (9:16)">📱 Insta/FB Reel — 30 sec (9:16)</option><option value="Insta/FB Video 1m (9:16)">📱 Insta/FB Video — 1 min (9:16)</option><option value="YouTube Video 3m (16:9)">▶️ YouTube — 3 min (16:9)</option><option value="YouTube Video 10m (16:9)">▶️ YouTube — 10 min (16:9)</option><option value="Original Song & Lyrics">🎵 Song & Lyrics Creation</option></select></div>
+        <div class="form-group"><label>Visual Mode</label><select id="vidStyle"><option value="AI Style">✨ AI Style</option><option value="Faceless">🎭 Faceless</option><option value="Natural Mode">🌿 Natural Mode</option></select></div>
+        <div class="form-group"><label>Language</label><select id="vidLang"><option value="Hindi">Hindi</option><option value="English">English</option><option value="Gujarati">Gujarati</option><option value="Hinglish">Hinglish</option></select></div>
+        <div class="error-msg" id="vidErr"></div>
+        <button class="btn-primary" style="width:100%;" id="vidGenBtn" onclick="generateCreator()">✨ Generate & Merge Video + Audio</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal">
+      <h2>🔐 Secret Owner Admin</h2>
+      <div class="form-group"><label>Secret Admin Password</label><input type="password" id="pinInput" placeholder="Admin Password daalein..." /></div>
+      <div class="form-group"><label>AI Provider</label><select id="providerSelect" onchange="onProviderChange()"><option value="demo">Demo Mode</option><option value="gemini">Google Gemini (Auto-Fallback)</option><option value="openai">OpenAI API</option></select></div>
+      <div class="form-group" id="modelGroup" style="display:none;"><label>Primary Model ID</label><input type="text" id="modelInput" /></div>
+      <div class="form-group" id="keyGroup" style="display:none;"><label>API Key (<span id="keyStatusText">Not Set</span>)</label><input type="password" id="apiKeyInput" placeholder="Nayi API key daalein..." /></div>
+      <div class="form-group"><label>Extra Custom Rules</label><textarea id="customPromptInput" rows="2"></textarea></div>
+      <div class="form-group"><label>New Secret Password (Optional)</label><input type="password" id="newPinInput" placeholder="Badalna ho toh likhein..." /></div>
+      <div class="error-msg" id="settingsError"></div>
+      <div class="modal-actions"><button class="btn-secondary" onclick="closeModal('settingsModal')">Cancel</button><button class="btn-primary" onclick="saveSettingsUI()">Save</button></div>
+    </div>
+  </div>
+  <script>
+    let currentUser = null, isGuest = false, chats = [], currentChatId = null;
+    let isGenerating = false, useLiveSearch = false, isGroupMode = false;
+    let pendingImgB64 = "", pendingImgMime = "image/jpeg";
+    let currentSettings = { provider: "demo", model: "gemini-3.8-flash", has_key: false, custom_prompt: "" };
+    let recognition = null, isRecording = false, deferredInstallPrompt = null, calcStr = "";
+    let tapCount = 0, tapTimer = null, currentAudio = null, focusInterval = null, focusSecs = 1500;
+
+    const PERSONA_INFO = {
+      shehja: { title: "Haan ji, main Shehja hoon 🌸", desc: "Batao aaj kya haal hai? Kuch padhna ho, dil ki baat karni ho, ya PPT/notes chahiye — sab milkar karenge!" },
+      ansh: { title: "Main Ansh hoon — Aapka Tutor 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — koi bhi doubt poochein, main blackboard ke saath step-by-step samjhaunga!" },
+      armaan: { title: "Armaan here — Pro Coder 💻", desc: "Python, Web, Apps ya Debugging — apna code ya error bhejo, saath milkar clean solution banate hain." },
+      rayan: { title: "Main Rayan hoon — All-Rounder 🌟", desc: "Deep analysis, research, strategy ya group brainstorming — kisi bhi topic par gehrai se kaam karte hain." },
+      vadil: { title: "Aao beta, main hoon na 🤍", desc: "Mann bhaari ho, akelapan lage ya koi tension ho — bina kisi jhijhak ke dil ki baat kaho, main sun raha hoon." }
+    };
+
+    const promptInput = document.getElementById("promptInput"), sendBtn = document.getElementById("sendBtn");
+    const messagesWrap = document.getElementById("messagesWrap"), welcomeScreen = document.getElementById("welcomeScreen");
+    const chatContainer = document.getElementById("chatContainer"), chatList = document.getElementById("chatList");
+
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+    window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; document.getElementById("installBtn").style.display = "flex"; });
+    async function installApp() { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; document.getElementById("installBtn").style.display = "none"; }
+
+    promptInput.addEventListener("input", () => { promptInput.style.height = "auto"; promptInput.style.height = Math.min(promptInput.scrollHeight, 140) + "px"; });
+    promptInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+    function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+    function toggleSidebar(open) { document.getElementById("sidebar").classList.toggle("open", open); document.getElementById("overlay").classList.toggle("open", open); }
+    function toggleSearch() { useLiveSearch = !useLiveSearch; const b = document.getElementById("searchToggle"); b.classList.toggle("active", useLiveSearch); b.textContent = useLiveSearch ? "🌐 Search: ON" : "🌐 Search"; }
+    function toggleGroup() { isGroupMode = !isGroupMode; document.getElementById("groupToggle").classList.toggle("active", isGroupMode); }
+
+    function secretLogoTap() {
+      tapCount++;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => { tapCount = 0; }, 2500);
+      if (tapCount >= 5) { tapCount = 0; openSettings(); }
+    }
+    if (location.hash === "#sr-admin") setTimeout(openSettings, 400);
+
+    function onPersonaChange() {
+      const p = document.getElementById("personaSelect").value;
+      document.body.dataset.theme = p;
+      document.getElementById("eduBar").style.display = (p === "ansh") ? "flex" : "none";
+      const info = PERSONA_INFO[p] || PERSONA_INFO.shehja;
+      document.getElementById("welcomeTitle").textContent = info.title;
+      document.getElementById("welcomeDesc").textContent = info.desc;
+    }
+
+    function openAuthGate() { document.getElementById("authGate").style.display = "flex"; }
+    function enterGuest() { isGuest = true; document.getElementById("authGate").style.display = "none"; document.getElementById("userLabel").textContent = "Guest (Not Saved)"; }
+    function switchAuthTab(t) {
+      ["login", "signup", "forgot"].forEach(x => {
+        document.getElementById("tab" + x[0].toUpperCase() + x.slice(1)).classList.toggle("active", x === t);
+        document.getElementById("pane" + x[0].toUpperCase() + x.slice(1)).style.display = (x === t) ? "block" : "none";
+      });
+      ["loginErr", "regErr", "fErr", "fOk"].forEach(id => { document.getElementById(id).style.display = "none"; });
+    }
+    function switchForgotType(tp) {
+      document.getElementById("fTabQ").classList.toggle("active", tp === "q");
+      document.getElementById("fTabOtp").classList.toggle("active", tp === "otp");
+      document.getElementById("fBoxQ").style.display = tp === "q" ? "block" : "none";
+      document.getElementById("fBoxOtp").style.display = tp === "otp" ? "block" : "none";
+    }
+    async function doLogin() {
+      const err = document.getElementById("loginErr"); err.style.display = "none";
+      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("loginEmail").value.trim(), password: document.getElementById("loginPass").value }) });
+      const d = await res.json();
+      if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      isGuest = false; await initSession();
+    }
+    async function doSignup() {
+      const err = document.getElementById("regErr"); err.style.display = "none";
+      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: document.getElementById("regName").value.trim(), email: document.getElementById("regEmail").value.trim(), password: document.getElementById("regPass").value, sec_q: document.getElementById("regSecQ").value, sec_a: document.getElementById("regSecA").value.trim() }) });
+      const d = await res.json();
+      if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      isGuest = false; await initSession();
+    }
+    async function doLogout() { await fetch("/api/auth/logout", { method: "POST" }); currentUser = null; chats = []; startNewChat(); openAuthGate(); }
+    async function fetchSecQuestion() {
+      const err = document.getElementById("fErr"), ok = document.getElementById("fOk"); err.style.display = "none"; ok.style.display = "none";
+      const res = await fetch("/api/auth/forgot-question", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("fEmail").value.trim() }) });
+      const d = await res.json(); if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      document.getElementById("fQLabel").textContent = "Sawaal: " + d.sec_q; document.getElementById("fQStep2").style.display = "block";
+    }
+    async function resetViaQuestion() {
+      const err = document.getElementById("fErr"), ok = document.getElementById("fOk"); err.style.display = "none"; ok.style.display = "none";
+      const res = await fetch("/api/auth/reset-question", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("fEmail").value.trim(), sec_a: document.getElementById("fSecA").value.trim(), new_password: document.getElementById("fNewPassQ").value }) });
+      const d = await res.json(); if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      ok.textContent = "✅ Password reset ho gaya! Ab Sign In karein."; ok.style.display = "block";
+    }
+    async function sendEmailOtp() {
+      const err = document.getElementById("fErr"), ok = document.getElementById("fOk"); err.style.display = "none"; ok.style.display = "none";
+      const res = await fetch("/api/auth/send-otp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("fEmail").value.trim() }) });
+      const d = await res.json(); if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      ok.textContent = "✅ 6-Digit OTP email par bhej diya gaya!"; ok.style.display = "block";
+    }
+    async function resetViaOtp() {
+      const err = document.getElementById("fErr"), ok = document.getElementById("fOk"); err.style.display = "none"; ok.style.display = "none";
+      const res = await fetch("/api/auth/reset-otp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("fEmail").value.trim(), otp: document.getElementById("fOtpCode").value.trim(), new_password: document.getElementById("fNewPassOtp").value }) });
+      const d = await res.json(); if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      ok.textContent = "✅ Password reset ho gaya! Ab Sign In karein."; ok.style.display = "block";
+    }
+
+    async function initSession() {
+      const me = await (await fetch("/api/auth/me")).json();
+      currentUser = me.user;
+      const sideB = document.getElementById("authSideBtn");
+      if (currentUser) {
+        document.getElementById("authGate").style.display = "none";
+        document.getElementById("userLabel").textContent = currentUser.name + " (Synced ✅)";
+        sideB.innerHTML = '<span>🚪 Logout (' + escapeHtml(currentUser.name) + ')</span><span class="mode-badge">Synced</span>';
+        sideB.onclick = () => { if (confirm("Logout karna hai?")) doLogout(); };
+        chats = await (await fetch("/api/chats")).json();
+        renderChatList();
+        if (me.last_topic) {
+          document.getElementById("welcomeDesc").textContent = "Welcome back " + currentUser.name + "! Pichli baar hum '" + me.last_topic + "' par baat kar rahe the — aaj aage badhein?";
+        }
+      } else if (!isGuest) {
+        openAuthGate();
+      }
+    }
+
+    function openCalcModal() { document.getElementById("calcModal").classList.add("open"); }
+    function calcAdd(v) { calcStr += v; document.getElementById("calcExpr").textContent = calcStr || "0"; }
+    function calcClear() { calcStr = ""; document.getElementById("calcExpr").textContent = "0"; document.getElementById("calcRes").textContent = "0"; }
+    function calcBack() { calcStr = calcStr.slice(0, -1); document.getElementById("calcExpr").textContent = calcStr || "0"; }
+    function calcEval() {
+      if (!calcStr) return null;
+      try {
+        let js = calcStr.replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-").replace(/\^/g,"**").replace(/π/g,"Math.PI").replace(/√\(/g,"Math.sqrt(").replace(/sin\(/g,"Math.sin(Math.PI/180*").replace(/cos\(/g,"Math.cos(Math.PI/180*").replace(/tan\(/g,"Math.tan(Math.PI/180*").replace(/log\(/g,"Math.log10(");
+        if (/[^0-9+\-*/().%\s]/.test(js.replace(/Math\.(PI|sqrt|sin|cos|tan|log10)/g,""))) throw new Error();
+        const val = Function('"use strict";return (' + js + ')')();
+        if (typeof val !== "number" || !isFinite(val)) throw new Error();
+        const out = Number(val.toPrecision(12)); document.getElementById("calcRes").textContent = out; return out;
+      } catch (e) { document.getElementById("calcRes").textContent = "Error"; return null; }
+    }
+    function askCalcStep() {
+      const expr = calcStr || document.getElementById("calcRes").textContent; if (!expr || expr === "0") return;
+      const ans = calcEval(); closeModal("calcModal");
+      document.getElementById("personaSelect").value = "ansh"; onPersonaChange();
+      promptInput.value = "Is maths calculation ko step-by-step blackboard par solve karke samjhao: " + expr + (ans !== null ? " (Answer: " + ans + ")" : "");
+      sendMessage();
+    }
+
+    function openFocusModal() { document.getElementById("focusModal").classList.add("open"); }
+    function startFocus() {
+      clearInterval(focusInterval);
+      focusSecs = parseInt(document.getElementById("focusMins").value, 10) * 60;
+      const half = Math.floor(focusSecs / 2);
+      closeModal("focusModal");
+      focusInterval = setInterval(() => {
+        focusSecs--;
+        const m = String(Math.floor(focusSecs / 60)).padStart(2, "0"), s = String(focusSecs % 60).padStart(2, "0");
+        document.getElementById("focusBtn").textContent = "⏱️ " + m + ":" + s;
+        document.getElementById("focusDisplay").textContent = m + ":" + s;
+        if (focusSecs === half) notifyUser("Shabaash! Aadha time poora ho gaya — bas thoda aur focus rakho!");
+        if (focusSecs <= 0) { clearInterval(focusInterval); document.getElementById("focusBtn").textContent = "⏱️ Focus"; notifyUser("Great job! Focus session complete ho gaya — ab 5 minute break le lo!"); }
+      }, 1000);
+    }
+    function stopFocus() { clearInterval(focusInterval); document.getElementById("focusBtn").textContent = "⏱️ Focus"; document.getElementById("focusDisplay").textContent = "25:00"; }
+    function notifyUser(msg) {
+      if (welcomeScreen.style.display !== "none") { welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex"; }
+      appendMessageDOM("assistant", "⏱️ **Focus Check-in:** " + msg); scrollToBottom();
+    }
+
+    function handleImagePick(e) {
+      const file = e.target.files[0]; if (!file) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const cv = document.createElement("canvas"), maxD = 1280;
+          let w = img.width, h = img.height;
+          if (w > maxD || h > maxD) { if (w > h) { h = Math.round(h * maxD / w); w = maxD; } else { w = Math.round(w * maxD / h); h = maxD; } }
+          cv.width = w; cv.height = h; cv.getContext("2d").drawImage(img, 0, 0, w, h);
+          const url = cv.toDataURL("image/jpeg", 0.86);
+          pendingImgB64 = url.split(",")[1]; pendingImgMime = "image/jpeg";
+          document.getElementById("imgPreviewThumb").src = url; document.getElementById("imgPreviewBar").style.display = "flex";
+        };
+        img.src = ev.target.result;
+      };
+      r.readAsDataURL(file); e.target.value = "";
+    }
+    function clearImage() { pendingImgB64 = ""; document.getElementById("imgPreviewBar").style.display = "none"; document.getElementById("imgPreviewThumb").src = ""; }
+
+    function toggleVoice() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { alert("Voice Recognition Chrome mein use karein."); return; }
+      if (isRecording && recognition) { recognition.stop(); return; }
+      recognition = new SR(); recognition.lang = "hi-IN"; recognition.interimResults = false;
+      recognition.onstart = () => { isRecording = true; document.getElementById("micBtn").classList.add("recording"); };
+      recognition.onresult = (e) => { const t = e.results[0][0].transcript; promptInput.value = (promptInput.value ? promptInput.value + " " : "") + t; promptInput.dispatchEvent(new Event("input")); };
+      recognition.onend = () => { isRecording = false; document.getElementById("micBtn").classList.remove("recording"); };
+      recognition.start();
+    }
+
+    async function speakText(btn, rawText) {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      window.speechSynthesis.cancel();
+      if (btn.dataset.playing === "1") { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; return; }
+      document.querySelectorAll(".speak-btn").forEach(b => { b.dataset.playing = "0"; b.textContent = "🔊 Suno"; });
+      btn.dataset.playing = "1"; btn.textContent = "⏳ Loading...";
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: rawText, persona: document.getElementById("personaSelect").value, tone: document.getElementById("voiceTone").value })
+        });
+        if (!res.ok) throw new Error("fallback");
+        const blob = await res.blob(), url = URL.createObjectURL(blob);
+        currentAudio = new Audio(url);
+        btn.textContent = "⏹️ Roko";
+        currentAudio.onended = () => { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; URL.revokeObjectURL(url); };
+        await currentAudio.play();
+      } catch (e) {
+        const tick = String.fromCharCode(96);
+        const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
+        u.onend = () => { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; };
+        btn.textContent = "⏹️ Roko"; window.speechSynthesis.speak(u);
+      }
+    }
+
+    function escapeHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+    function formatMarkdown(text) {
+      const tick = String.fromCharCode(96), triple = tick + tick + tick, blocks = [], bbs = [];
+      let p = text.replace(/\[BLACKBOARD\]([\s\S]*?)\[\/BLACKBOARD\]/g, (_, content) => {
+        const i = bbs.length;
+        bbs.push('<div class="blackboard"><div class="bb-hdr"><span>🖍️ ANSH BLACKBOARD</span><button class="copy-btn" onclick="copyParent(this,\'pre\')">Copy</button></div><pre style="white-space:pre-wrap;">' + escapeHtml(content.trim()) + '</pre></div>');
+        return "%%BB_" + i + "%%";
+      });
+      p = p.replace(new RegExp(triple + "([a-zA-Z0-9_-]*)\\s*\\n([\\s\\S]*?)" + triple, "g"), (_, lang, code) => {
+        const i = blocks.length;
+        blocks.push('<div class="code-block"><div class="code-header"><span>' + escapeHtml(lang || "code") + '</span><button class="copy-btn" onclick="copyParent(this,\'code\')">Copy</button></div><pre><code>' + escapeHtml(code.trimEnd()) + '</code></pre></div>');
+        return "%%CB_" + i + "%%";
+      });
+      p = escapeHtml(p);
+      p = p.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      p = p.replace(new RegExp(tick + "([^" + tick + "]+)" + tick, "g"), "<code>$1</code>");
+      p = p.replace(/^### (.+)$/gm, "<h4>$1</h4>").replace(/^## (.+)$/gm, "<h3>$1</h3>").replace(/^# (.+)$/gm, "<h2>$1</h2>");
+      p = p.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+      p = p.split(/\n{2,}/).map(x => "<p>" + x.replace(/\n/g, "<br>") + "</p>").join("");
+      blocks.forEach((h, i) => { p = p.replace("%%CB_" + i + "%%", h); });
+      bbs.forEach((h, i) => { p = p.replace("%%BB_" + i + "%%", h); });
+      return p;
+    }
+    function copyParent(btn, sel) { navigator.clipboard.writeText(btn.closest(".code-block,.blackboard").querySelector(sel).textContent); btn.textContent = "Copied!"; setTimeout(() => (btn.textContent = "Copy"), 1500); }
+    function exportPdf(text) {
+      const w = window.open("", "_blank");
+      w.document.write("<html><head><title>SR Notes PDF</title><style>body{font-family:Arial,sans-serif;padding:28px;line-height:1.65;color:#111}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}</style></head><body><h2>Shehja SR — Study Notes</h2><hr/>" + formatMarkdown(text) + "<script>window.print();<\/script></body></html>");
+      w.document.close();
+    }
+
+    function appendMessageDOM(role, content, imgUrl) {
+      const row = document.createElement("div"); row.className = "msg-row " + (role === "user" ? "user" : "ai");
+      if (role !== "user") { const av = document.createElement("img"); av.className = "avatar"; av.src = "/icon.svg?v=3"; av.alt = "SR"; row.appendChild(av); }
+      const col = document.createElement("div"); col.className = "msg-col";
+      if (imgUrl) { const im = document.createElement("img"); im.className = "msg-img"; im.src = imgUrl; col.appendChild(im); }
+      const bubble = document.createElement("div"); bubble.className = "msg-bubble";
+      if (role === "user") bubble.textContent = content; else bubble.innerHTML = formatMarkdown(content);
+      col.appendChild(bubble);
+      if (role !== "user" && content) addActionButtons(col, content);
+      row.appendChild(col); messagesWrap.appendChild(row);
+      return { bubble, col };
+    }
+    function addActionButtons(col, rawText) {
+      const act = document.createElement("div"); act.className = "msg-actions";
+      const sp = document.createElement("button"); sp.className = "act-btn speak-btn"; sp.textContent = "🔊 Suno"; sp.onclick = () => speakText(sp, rawText);
+      const cp = document.createElement("button"); cp.className = "act-btn"; cp.textContent = "📋 Copy"; cp.onclick = () => { navigator.clipboard.writeText(rawText); cp.textContent = "✅ Copied"; setTimeout(() => (cp.textContent = "📋 Copy"), 1400); };
+      const pdf = document.createElement("button"); pdf.className = "act-btn"; pdf.textContent = "📄 PDF"; pdf.onclick = () => exportPdf(rawText);
+      const gm = document.createElement("a"); gm.className = "act-btn"; gm.textContent = "✉️ Gmail"; gm.target = "_blank"; gm.href = "https://mail.google.com/mail/?view=cm&fs=1&su=" + encodeURIComponent("Notes / Draft") + "&body=" + encodeURIComponent(rawText.slice(0, 1500));
+      const cal = document.createElement("a"); cal.className = "act-btn"; cal.textContent = "📅 Cal"; cal.target = "_blank"; cal.href = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent("Study / Task Reminder") + "&details=" + encodeURIComponent(rawText.slice(0, 500));
+      act.append(sp, cp, pdf, gm, cal); col.appendChild(act);
+    }
+
+    function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+    function renderChatList() {
+      chatList.innerHTML = "";
+      chats.forEach(c => {
+        const it = document.createElement("div"); it.className = "chat-item" + (c.id === currentChatId ? " active" : ""); it.onclick = () => loadChat(c.id);
+        const t = document.createElement("span"); t.className = "chat-title"; t.textContent = c.title || "Naya Chat";
+        const d = document.createElement("button"); d.className = "del-btn"; d.textContent = "✕"; d.onclick = (e) => { e.stopPropagation(); deleteChat(c.id); };
+        it.appendChild(t); it.appendChild(d); chatList.appendChild(it);
+      });
+    }
+    function startNewChat() { currentChatId = null; messagesWrap.innerHTML = ""; messagesWrap.style.display = "none"; welcomeScreen.style.display = "block"; renderChatList(); toggleSidebar(false); }
+    async function loadChat(id) {
+      currentChatId = id; welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex"; messagesWrap.innerHTML = "";
+      let msgs = [];
+      if (currentUser) {
+        msgs = await (await fetch("/api/chats/" + encodeURIComponent(id))).json();
+        const c = chats.find(x => x.id === id); if (c) c.messages = msgs;
+      } else {
+        const c = chats.find(x => x.id === id); msgs = c ? (c.messages || []) : [];
+      }
+      msgs.forEach(m => appendMessageDOM(m.role, m.content, m.imgUrl)); renderChatList(); scrollToBottom(); toggleSidebar(false);
+    }
+    async function deleteChat(id) {
+      if (currentUser) await fetch("/api/chats/" + encodeURIComponent(id), { method: "DELETE" });
+      chats = chats.filter(c => c.id !== id);
+      if (currentChatId === id) startNewChat(); else renderChatList();
+    }
+    async function sendMessage() {
+      const text = promptInput.value.trim(), imgB64 = pendingImgB64, imgMime = pendingImgMime;
+      if ((!text && !imgB64) || isGenerating) return;
+      isGenerating = true; sendBtn.disabled = true; promptInput.value = ""; promptInput.style.height = "auto";
+      const previewUrl = imgB64 ? ("data:" + imgMime + ";base64," + imgB64) : ""; clearImage();
+      let isNew = false;
+      if (!currentChatId) {
+        isNew = true;
+        chats.unshift({ id: "tmp_" + Date.now(), title: (text || "Photo").slice(0, 36), messages: [] });
+        currentChatId = chats[0].id; welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+      }
+      const chat = chats.find(c => c.id === currentChatId); if (!chat.messages) chat.messages = [];
+      const uMsg = { role: "user", content: text || "Is photo ki har detail dhyaan se samjhao.", image: imgB64, mime: imgMime, imgUrl: previewUrl };
+      chat.messages.push(uMsg); renderChatList(); appendMessageDOM("user", uMsg.content, previewUrl);
+      const { bubble: aiB, col: aiC } = appendMessageDOM("assistant", "");
+      aiB.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>'; scrollToBottom();
+      const hist = chat.messages.slice(-12).map((m, idx, arr) => ({ role: m.role, content: m.content, image: (idx === arr.length - 1) ? (m.image || "") : "", mime: m.mime || "image/jpeg" }));
+      const edu = { board: document.getElementById("eduBoard").value, std: document.getElementById("eduStd").value, stream: document.getElementById("eduStream").value, subject: document.getElementById("eduSubject").value.trim(), eduknow: document.getElementById("eduKnowChk").checked };
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: (currentUser && !isNew) ? currentChatId : null, history: hist, persona: document.getElementById("personaSelect").value, edu, group_mode: isGroupMode, use_search: useLiveSearch })
+        });
+        const data = await res.json(); if (!res.ok) throw new Error(data.error || "Server error");
+        if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
+        chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();
+        aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
+      } catch (err) { aiB.innerHTML = "<p style='color:#f87171;'>⚠️ " + escapeHtml(err.message) + "</p>"; }
+      finally { isGenerating = false; sendBtn.disabled = false; scrollToBottom(); }
+    }
+
+    function openPptModal() { document.getElementById("pptError").style.display = "none"; document.getElementById("pptModal").classList.add("open"); }
+    async function generatePpt() {
+      const topic = document.getElementById("pptTopic").value.trim(), err = document.getElementById("pptError"); err.style.display = "none";
+      if (!topic) { err.textContent = "⚠️ Topic likhein!"; err.style.display = "block"; return; }
+      const btn = document.getElementById("pptGenBtn"); btn.disabled = true; btn.textContent = "⏳ Ban rahi hai...";
+      try {
+        const res = await fetch("/api/ppt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic, style: document.getElementById("pptStyle").value, count: document.getElementById("pptCount").value, theme: document.getElementById("pptTheme").value, lang: document.getElementById("pptLang").value }) });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("pptModal"); welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        appendMessageDOM("user", "📊 Make PPT: " + topic);
+        const { bubble } = appendMessageDOM("assistant", "");
+        bubble.innerHTML = '<div class="export-card"><h3>📊 ' + escapeHtml(d.ppt.title) + '</h3><p style="font-size:13px;color:#9aa3b2;">Theme: ' + escapeHtml(d.used_theme) + ' • ' + (d.ppt.slides.length + 2) + ' Unique Slides</p><a class="dl-btn" href="/api/ppt/' + encodeURIComponent(d.ppt_id) + '" download="' + escapeHtml(d.filename) + '">⬇️ Download .PPTX File</a></div>';
+        scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "✨ Generate PPT"; }
+    }
+    function openXlsxModal() { document.getElementById("xlsxError").style.display = "none"; document.getElementById("xlsxModal").classList.add("open"); }
+    async function generateXlsx() {
+      const topic = document.getElementById("xlsxTopic").value.trim(), err = document.getElementById("xlsxError"); err.style.display = "none";
+      if (!topic) { err.textContent = "⚠️ Topic likhein!"; err.style.display = "block"; return; }
+      const btn = document.getElementById("xlsxBtn"); btn.disabled = true; btn.textContent = "⏳ Ban rahi hai...";
+      try {
+        const res = await fetch("/api/xlsx", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic }) });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("xlsxModal"); welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        appendMessageDOM("user", "📗 Excel Sheet: " + topic);
+        const { bubble } = appendMessageDOM("assistant", "");
+        bubble.innerHTML = '<div class="export-card"><h3>📗 ' + escapeHtml(d.sheet.title) + '</h3><p style="font-size:13px;color:#9aa3b2;">Columns: ' + escapeHtml(d.sheet.headers.join(", ")) + '</p><a class="dl-btn" href="/api/xlsx/' + encodeURIComponent(d.xlsx_id) + '" download="' + escapeHtml(d.filename) + '">⬇️ Download .XLSX Excel</a></div>';
+        scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "✨ Generate .XLSX"; }
+    }
+
+    function openStudioModal() { document.getElementById("studioModal").classList.add("open"); }
+    function switchStudio(tp) {
+      document.getElementById("stTabImg").classList.toggle("active", tp === "img"); document.getElementById("stTabVid").classList.toggle("active", tp === "vid");
+      document.getElementById("stBoxImg").style.display = tp === "img" ? "block" : "none"; document.getElementById("stBoxVid").style.display = tp === "vid" ? "block" : "none";
+    }
+    async function generateImage() {
+      const prompt = document.getElementById("imgPrompt").value.trim(), err = document.getElementById("imgErr"); err.style.display = "none";
+      if (!prompt) { err.textContent = "⚠️ Prompt likhein!"; err.style.display = "block"; return; }
+      const btn = document.getElementById("imgGenBtn"); btn.disabled = true; btn.textContent = "⏳ Image ban rahi hai...";
+      try {
+        const res = await fetch("/api/image", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, size: document.getElementById("imgSize").value }) });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("studioModal"); welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        appendMessageDOM("user", "🖼️ Image: " + prompt);
+        const { bubble } = appendMessageDOM("assistant", "");
+        bubble.innerHTML = '<div class="export-card"><img src="' + d.url + '" style="max-width:100%;border-radius:10px;display:block;" /><a class="dl-btn" href="' + d.url + '" download="shehja_image.jpg">⬇️ Download Image</a></div>';
+        scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "✨ Create Image"; }
+    }
+    async function generateCreator() {
+      const topic = document.getElementById("vidTopic").value.trim(), kind = document.getElementById("vidKind").value;
+      const err = document.getElementById("vidErr"); err.style.display = "none";
+      if (!topic) { err.textContent = "⚠️ Topic likhein!"; err.style.display = "block"; return; }
+      const btn = document.getElementById("vidGenBtn"); btn.disabled = true; btn.textContent = "⏳ Creating...";
+      try {
+        const res = await fetch("/api/creator", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic, kind, style: document.getElementById("vidStyle").value, lang: document.getElementById("vidLang").value }) });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("studioModal"); welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        appendMessageDOM("user", "🎬 " + kind + ": " + topic);
+        const fullScript = d.scenes.map(s => s.narration).join(" ");
+        const { bubble, col } = appendMessageDOM("assistant", "");
+        let scenesHtml = d.scenes.map((s) => '<p><strong>' + escapeHtml(s.heading) + ':</strong> ' + escapeHtml(s.narration) + '</p>').join("");
+        bubble.innerHTML = '<div class="export-card"><h3>🎬 ' + escapeHtml(d.title) + '</h3>' + scenesHtml + '<p style="font-size:12.5px;color:#93c5fd;margin-top:8px;">' + escapeHtml(d.caption) + '</p><button class="dl-btn" id="mergeVidBtn">🔗 Render & Merge Video+Audio (.webm)</button></div>';
+        bubble.querySelector("#mergeVidBtn").onclick = (ev) => mergeVideoInBrowser(ev.target, d, kind, fullScript);
+        addActionButtons(col, d.title + "\n\n" + fullScript); scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "✨ Generate & Merge Video + Audio"; }
+    }
+    async function mergeVideoInBrowser(btn, data, kind, fullScript) {
+      btn.disabled = true; btn.textContent = "⏳ Rendering Video + Voice...";
+      try {
+        const isVert = kind.includes("9:16");
+        const cv = document.createElement("canvas"); cv.width = isVert ? 540 : 960; cv.height = isVert ? 960 : 540;
+        const ctx = cv.getContext("2d"), stream = cv.captureStream(24);
+        const ttsRes = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: fullScript, persona: document.getElementById("personaSelect").value, tone: "energy" }) });
+        let audioCtx = null, srcNode = null, durationMs = data.scenes.length * 4000;
+        if (ttsRes.ok) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const arrBuf = await (await ttsRes.blob()).arrayBuffer(), audioBuf = await audioCtx.decodeAudioData(arrBuf);
+          durationMs = Math.max(4000, audioBuf.duration * 1000);
+          const dest = audioCtx.createMediaStreamDestination();
+          srcNode = audioCtx.createBufferSource(); srcNode.buffer = audioBuf; srcNode.connect(dest);
+          dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+        }
+        const rec = new MediaRecorder(stream), chunks = [];
+        rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+        rec.onstop = () => {
+          const blob = new Blob(chunks, { type: "video/webm" }), url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = url; a.download = "shehja_studio.webm"; a.className = "dl-btn"; a.style.marginLeft = "8px"; a.textContent = "⬇️ Save Video (.webm)";
+          btn.replaceWith(a); if (audioCtx) audioCtx.close();
+        };
+        rec.start(); if (srcNode) srcNode.start();
+        const start = performance.now(), scenes = data.scenes;
+        const draw = () => {
+          const el = performance.now() - start, idx = Math.min(scenes.length - 1, Math.floor((el / durationMs) * scenes.length));
+          const gr = ctx.createLinearGradient(0, 0, cv.width, cv.height); gr.addColorStop(0, "#091b18"); gr.addColorStop(1, "#0f172a");
+          ctx.fillStyle = gr; ctx.fillRect(0, 0, cv.width, cv.height);
+          ctx.fillStyle = "#10a37f"; ctx.font = "bold 28px Arial"; ctx.fillText("SR • " + data.title.slice(0, 28), 40, 70);
+          ctx.fillStyle = "#38bdf8"; ctx.font = "bold 24px Arial"; ctx.fillText(scenes[idx].heading, 40, cv.height / 2 - 60);
+          ctx.fillStyle = "#ffffff"; ctx.font = "22px Arial";
+          const words = scenes[idx].narration.split(" "); let line = "", y = cv.height / 2;
+          words.forEach(w => { const test = line + w + " "; if (ctx.measureText(test).width > cv.width - 80) { ctx.fillText(line, 40, y); line = w + " "; y += 34; } else line = test; });
+          ctx.fillText(line, 40, y);
+          if (el < durationMs) requestAnimationFrame(draw); else rec.stop();
+        };
+        draw();
+      } catch (e) { btn.textContent = "⚠️ Browser Render Error"; btn.disabled = false; }
+    }
+
+    async function openSettings() {
+      const res = await fetch("/api/settings"); currentSettings = await res.json();
+      document.getElementById("pinInput").value = ""; document.getElementById("newPinInput").value = "";
+      document.getElementById("providerSelect").value = currentSettings.provider; document.getElementById("modelInput").value = currentSettings.model || "";
+      document.getElementById("apiKeyInput").value = ""; document.getElementById("customPromptInput").value = currentSettings.custom_prompt || "";
+      document.getElementById("keyStatusText").textContent = currentSettings.has_key ? "Key Saved ✅" : "Not Set";
+      document.getElementById("settingsError").style.display = "none"; onProviderChange(); document.getElementById("settingsModal").classList.add("open");
+    }
+    function onProviderChange() {
+      const p = document.getElementById("providerSelect").value, show = p !== "demo";
+      document.getElementById("modelGroup").style.display = show ? "block" : "none"; document.getElementById("keyGroup").style.display = show ? "block" : "none";
+      const m = document.getElementById("modelInput");
+      if (p === "gemini" && (!m.value || m.value.startsWith("gpt"))) m.value = "gemini-3.8-flash";
+      if (p === "openai" && (!m.value || m.value.startsWith("gemini"))) m.value = "gpt-6-luna";
+    }
+    async function saveSettingsUI() {
+      const err = document.getElementById("settingsError"); err.style.display = "none";
+      const res = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: document.getElementById("pinInput").value.trim(), new_pin: document.getElementById("newPinInput").value.trim(), provider: document.getElementById("providerSelect").value, model: document.getElementById("modelInput").value.trim(), api_key: document.getElementById("apiKeyInput").value.trim(), custom_prompt: document.getElementById("customPromptInput").value.trim() }) });
+      const d = await res.json(); if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      closeModal("settingsModal"); alert("✅ Settings Saved!");
+    }
+
+    initSession();
+  </script>
+</body>
+</html>
