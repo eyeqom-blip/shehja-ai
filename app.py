@@ -37,7 +37,7 @@ if USE_PG:
 _PPT_CACHE = {}
 _XLSX_CACHE = {}
 _IMG_CACHE = {}
-FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.6-flash"]
+FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
 
 
 def db_connect():
@@ -97,7 +97,7 @@ def init_db():
     env_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("OPENAI_API_KEY") or ""
     def_prov = os.environ.get("AI_PROVIDER") or ("gemini" if os.environ.get("GEMINI_API_KEY") else ("openai" if os.environ.get("OPENAI_API_KEY") else "demo"))
     defaults = {
-        "provider": def_prov, "model": os.environ.get("AI_MODEL", "gemini-3.8-flash"),
+        "provider": def_prov, "model": os.environ.get("AI_MODEL", "gemini-3.5-flash-lite"),
         "api_key": env_key, "admin_pin": os.environ.get("SHEHJA_PIN", "1234"),
         "custom_prompt": os.environ.get("CUSTOM_PROMPT", ""),
     }
@@ -109,7 +109,7 @@ def get_config():
     rows = db_exec("SELECT key, value FROM config", fetch="all") or []
     cfg = {k: v for k, v in rows}
     return {
-        "provider": cfg.get("provider", "demo"), "model": cfg.get("model", "gemini-3.8-flash"),
+        "provider": cfg.get("provider", "demo"), "model": cfg.get("model", "gemini-3.5-flash-lite"),
         "api_key": cfg.get("api_key", ""), "admin_pin": os.environ.get("SHEHJA_PIN") or cfg.get("admin_pin", "1234"),
         "custom_prompt": cfg.get("custom_prompt", ""),
     }
@@ -181,7 +181,7 @@ def call_demo(user_text, persona="shehja"):
 def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.65):
     if not api_key:
         raise ValueError("API key configured nahi hai.")
-    primary = model or "gemini-3.8-flash"
+    primary = model or "gemini-3.5-flash-lite"
     models_to_try = [primary] + [m for m in FALLBACK_MODELS if m != primary]
     contents = []
     for m in history:
@@ -201,7 +201,7 @@ def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.6
         if with_tools:
             payload["tools"] = [{"google_search": {}}]
         req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=75) as resp:
+        with urllib.request.urlopen(req, timeout=25) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     data, last_err = None, "API error"
@@ -219,15 +219,14 @@ def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.6
                 try:
                     data = do_req(mdl, False)
                     break
-                except urllib.error.HTTPError as e2:
-                    err2 = e2.read().decode("utf-8", errors="ignore")
-                    try:
-                        last_err = json.loads(err2).get("error", {}).get("message", err2)
-                    except Exception:
-                        last_err = err2 or str(e2)
+                except Exception:
+                    pass
             if e.code in (400, 403, 404, 429, 500, 503):
                 continue
             raise RuntimeError(last_err)
+        except (TimeoutError, urllib.error.URLError, OSError) as e:
+            last_err = str(e)
+            continue
 
     if data is None:
         raise RuntimeError(last_err)
@@ -247,6 +246,7 @@ def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.6
     if sources:
         reply += "\n\n**🌐 Sources:**\n" + "\n".join(sources)
     return reply
+
 
 
 def call_openai(history, model, api_key, system_text, temp=0.65):
@@ -499,7 +499,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             if str(d.get("pin") or "").strip() != cfg["admin_pin"]:
                 self.send_json(403, {"error": "Galat Secret Admin Password!"})
                 return
-            save_config(d.get("provider", "demo"), d.get("model", "gemini-3.8-flash"), d.get("api_key", ""), str(d.get("new_pin") or "").strip(), d.get("custom_prompt"))
+            save_config(d.get("provider", "demo"), d.get("model", "gemini-3.5-flash-lite"), d.get("api_key", ""), str(d.get("new_pin") or "").strip(), d.get("custom_prompt"))
             self.send_json(200, {"ok": True})
             return
 
