@@ -154,77 +154,133 @@ async def _tts_async(text, voice, rate, pitch):
     return bytes(buf)
 
 
+def _pad_wav_silence(wav_bytes, ms=280):
+    try:
+        if not wav_bytes.startswith(b"RIFF"):
+            return wav_bytes
+        idx = wav_bytes.find(b"data")
+        if idx == -1 or idx + 8 > len(wav_bytes):
+            return wav_bytes
+        sr = int.from_bytes(wav_bytes[24:28], "little") or 24000
+        ch = int.from_bytes(wav_bytes[22:24], "little") or 1
+        bps = int.from_bytes(wav_bytes[34:36], "little") or 16
+        pad_len = int(sr * ch * (bps // 8) * (ms / 1000.0))
+        pad = b"\x00" * (pad_len - (pad_len % 2))
+        old_data_sz = int.from_bytes(wav_bytes[idx + 4:idx + 8], "little")
+        new_data_sz = old_data_sz + len(pad)
+        out = bytearray(wav_bytes)
+        out[idx + 4:idx + 8] = new_data_sz.to_bytes(4, "little")
+        out.extend(pad)
+        out[4:8] = (len(out) - 8).to_bytes(4, "little")
+        return bytes(out)
+    except Exception:
+        return wav_bytes
+
+
 def roman_hinglish_to_spoken(cfg, text):
-    # If already Devanagari/Gujarati or pure English without Hindi words, return as-is
-    if any("\u0900" <= c <= "\u097f" or "\u0a80" <= c <= "\u0aff" for c in text):
-        return text
-    hindi_markers = ("hai", "hain", "hoon", "ho", "kya", "nahi", "nhi", "aap", "tum", "main", "mein", "kar", "raha", "rahi", "bhai", "yaar", "beta", "chinta", "batao", "samajh", "kaise", "kaisa", "kaisi", "accha", "acha", "theek", "bahut", "dil", "mann")
-    words = re.findall(r"[a-zA-Z]+", text.lower())
+    # Clean markdown / newlines into smooth punctuation first
+    t = re.sub(r"[\.]{2,}|…", ", ", text)
+    t = re.sub(r"\s*\n+\s*", "। ", t).strip()
+    if any("\u0900" <= c <= "\u097f" or "\u0a80" <= c <= "\u0aff" for c in t):
+        return t
+    hindi_markers = ("hai", "hain", "hoon", "ho", "kya", "nahi", "nhi", "aap", "tum", "main", "mein", "kar", "raha", "rahi", "bhai", "yaar", "beta", "chinta", "batao", "samajh", "kaise", "kaisa", "kaisi", "accha", "acha", "theek", "bahut", "dil", "mann", "haan", "ji", "sun", "suno", "mat", "karo")
+    words = re.findall(r"[a-zA-Z]+", t.lower())
     if not any(w in hindi_markers for w in words):
-        return text
+        return t
     if cfg.get("provider") == "gemini" and cfg.get("api_key"):
         try:
             prompt = (
-                "Convert the following Hinglish chat reply into natural spoken Hindi in Devanagari script "
-                "(keep English technical terms like Python, AI, PDF in simple natural phonetic/English form, "
-                "add gentle commas and '...' pauses for warm human emotional delivery). "
-                "Return ONLY the spoken text, nothing else:\n\n" + text[:1800]
+                "Rewrite this Hinglish reply into smooth, natural, expressive spoken Hindi in Devanagari script "
+                "so it sounds like a caring human speaking aloud. "
+                "Rules: Use commas ',' for soft breaths and Hindi purna viram '।' at every sentence end (or '?'/'!'). "
+                "NEVER use '...' or ellipses or symbols. Keep natural warmth intact. Return ONLY the spoken Devanagari text:\n\n" + t[:1800]
             )
             url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + urllib.parse.quote(cfg["api_key"], safe="")
-            payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}}
+            payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.25}}
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
             with urllib.request.urlopen(req, timeout=8) as resp:
                 d = json.loads(resp.read().decode("utf-8"))
             out = d["candidates"][0]["content"]["parts"][0]["text"].strip()
+            out = re.sub(r"[\.]{2,}|…", ", ", out)
+            if out and out[-1] not in ("।", ".", "?", "!"):
+                out += "।"
             if out:
                 return out
         except Exception:
             pass
-    return text
+    return t
 
 
 def synth_sarvam_wav(text, persona_key, tone="auto"):
     key = os.environ.get("SARVAM_API_KEY", "").strip()
     if not key:
         return None
-    clean = re.sub(r"\[BLACKBOARD\][\s\S]*?\[/BLACKBOARD\]", " blackboard par likh diya hai. ", text)
-    clean = re.sub(r"```[\s\S]*?```", " code screen par hai. ", clean)
+    clean = re.sub(r"\[BLACKBOARD\][\s\S]*?\[/BLACKBOARD\]", " blackboard par likh diya hai। ", text)
+    clean = re.sub(r"```[\s\S]*?```", " code screen par hai। ", clean)
     clean = re.sub(r"[*_#`>]", "", clean)
     clean = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean).strip()
     if not clean:
         return None
     clean = roman_hinglish_to_spoken(get_config(), clean)
+    if not clean:
+        return None
+    if clean[-1] not in ("।", ".", "?", "!"):
+        clean += "।"
+
     lang = "gu-IN" if any("\u0a80" <= c <= "\u0aff" for c in clean) else "hi-IN"
     if not any("\u0900" <= c <= "\u097f" or "\u0a80" <= c <= "\u0aff" for c in clean):
         lang = "en-IN"
-    speaker = "ritu" if persona_key == "shehja" else ("ashutosh" if persona_key == "vadil" else "shubh")
-    pace = 0.92 if tone in ("soft", "calm") or persona_key == "vadil" else (1.06 if tone == "energy" else 0.96)
-    base_payload = {
-        "inputs": [clean[:2400]],
-        "target_language_code": lang,
-        "model": "bulbul:v3",
-        "speaker": speaker,
-        "pace": pace,
-        "speech_sample_rate": 24000,
-        "enable_preprocessing": True,
-    }
-    def call_s(pl):
+
+    low = text.lower()
+    is_emotional = any(w in low for w in ("sorry", "sad", "udaas", "dukhi", "akela", "chinta", "tension", "beta", "himmat", "pyaar", "dil", "fikar", "ro", "mushkil"))
+    is_happy = any(w in low for w in ("mubarak", "congrats", "awesome", "great", "wah", "haha", "mazaa", "khush", "shabaash"))
+
+    if tone in ("priya", "simran", "ritu", "kavya") and persona_key == "shehja":
+        sp3 = tone
+    elif persona_key == "shehja":
+        sp3 = "simran" if is_emotional else ("kavya" if is_happy else "priya")
+    elif persona_key == "vadil":
+        sp3 = "ashutosh"
+    elif persona_key == "rayan":
+        sp3 = "kabir"
+    else:
+        sp3 = "shubh"
+
+    if tone in ("soft", "calm", "simran") or is_emotional or persona_key == "vadil":
+        pace, temp = 0.89, 0.62
+    elif tone in ("energy", "kavya") or is_happy:
+        pace, temp = 1.00, 0.72
+    elif tone == "teacher" or persona_key == "ansh":
+        pace, temp = 0.94, 0.58
+    else:
+        pace, temp = 0.94, 0.66
+
+    sp2 = "anushka" if persona_key == "shehja" else "karun"
+    attempts = [
+        {"text": clean[:2400], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "temperature": temp, "speech_sample_rate": 24000, "enable_preprocessing": True},
+        {"inputs": [clean[:2400]], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "speech_sample_rate": 24000, "enable_preprocessing": True},
+        {"inputs": [clean[:500]], "target_language_code": lang, "model": "bulbul:v2", "speaker": sp2, "pace": pace, "loudness": 1.2, "speech_sample_rate": 22050, "enable_preprocessing": True},
+    ]
+    last_err = None
+    for pl in attempts:
         req = urllib.request.Request(
             "https://api.sarvam.ai/text-to-speech",
             data=json.dumps(pl).encode("utf-8"),
             headers={"api-subscription-key": key, "Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    try:
-        d = call_s({**base_payload, "temperature": 0.85})
-    except urllib.error.HTTPError as e:
-        if e.code == 400:
-            d = call_s(base_payload)
-        else:
+        try:
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                d = json.loads(resp.read().decode("utf-8"))
+            return _pad_wav_silence(base64.b64decode(d["audios"][0]), 280)
+        except urllib.error.HTTPError as e:
+            last_err = e
+            if e.code == 400:
+                continue
             raise
-    return base64.b64decode(d["audios"][0])
+    if last_err:
+        raise last_err
+    return None
 
 def synth_neural_mp3(text, persona_key, tone="auto"):
     if edge_tts is None:
