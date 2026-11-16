@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="theme-color" content="#10a37f" />
-  <link rel="manifest" href="/manifest.json?v=3" />
-  <link rel="icon" href="/icon-192.png?v=3" type="image/png" />
-  <link rel="apple-touch-icon" href="/icon-192.png?v=3" />
+  <link rel="manifest" href="/manifest.json?v=5" />
+  <link rel="icon" href="/icon-192.png?v=5" type="image/png" />
+  <link rel="apple-touch-icon" href="/icon-192.png?v=5" />
   <title>Shehja — SR</title>
   <style>
     :root{--bg:#16181d;--sb:#101216;--in:#23262f;--hv:#262a34;--bd:#323744;--tx:#eef1f6;--mt:#9aa3b2;--ac:#10a37f;--ac2:#2563eb;--dn:#ef4444}
@@ -131,7 +131,7 @@
   <div class="auth-gate" id="authGate">
     <div class="auth-card">
       <div class="auth-head">
-        <img src="/icon.svg?v=3" alt="SR" />
+        <img src="/icon.svg?v=5" alt="SR" />
         <h1>Shehja AI — SR</h1>
         <p>Sign In karein taaki aapka data kisi bhi phone ya PC par save rahe</p>
       </div>
@@ -189,7 +189,7 @@
   <div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header" onclick="secretLogoTap()">
-      <img src="/icon.svg?v=3" alt="SR" style="width:36px;height:36px;border-radius:10px;flex-shrink:0;" />
+      <img src="/icon.svg?v=5" alt="SR" style="width:36px;height:36px;border-radius:10px;flex-shrink:0;" />
       <div><span>Shehja — SR</span><span class="brand-sub" id="userLabel">Guest Mode</span></div>
     </div>
     <button class="new-chat-btn" onclick="startNewChat()"><span>＋</span> Naya Chat</button>
@@ -229,7 +229,7 @@
 
     <div class="chat-container" id="chatContainer">
       <div class="welcome" id="welcomeScreen">
-        <img src="/icon.svg?v=3" alt="SR" onclick="secretLogoTap()" style="width:72px;height:72px;border-radius:18px;margin:0 auto 12px;display:block;box-shadow:0 8px 24px rgba(16,185,129,.3);" />
+        <img src="/icon.svg?v=5" alt="SR" onclick="secretLogoTap()" style="width:72px;height:72px;border-radius:18px;margin:0 auto 12px;display:block;box-shadow:0 8px 24px rgba(16,185,129,.3);" />
         <h1 id="welcomeTitle">Haan ji, main Shehja hoon 🌸</h1>
         <p id="welcomeDesc">Batao aaj kya haal hai? Kuch padhna ho, code banana ho, mann halka karna ho, ya presentation/notes chahiye — sab milkar karenge!</p>
         <div class="suggestions">
@@ -619,7 +619,7 @@
 
     function appendMessageDOM(role, content, imgUrl) {
       const row = document.createElement("div"); row.className = "msg-row " + (role === "user" ? "user" : "ai");
-      if (role !== "user") { const av = document.createElement("img"); av.className = "avatar"; av.src = "/icon.svg?v=3"; av.alt = "SR"; row.appendChild(av); }
+      if (role !== "user") { const av = document.createElement("img"); av.className = "avatar"; av.src = "/icon.svg?v=5"; av.alt = "SR"; row.appendChild(av); }
       const col = document.createElement("div"); col.className = "msg-col";
       if (imgUrl) { const im = document.createElement("img"); im.className = "msg-img"; im.src = imgUrl; col.appendChild(im); }
       const bubble = document.createElement("div"); bubble.className = "msg-bubble";

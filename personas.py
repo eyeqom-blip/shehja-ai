@@ -2,7 +2,7 @@ GLOBAL_HUMAN_RULES = """CRITICAL PERSONALITY & COMMUNICATION RULES:
 1. Pure Human Feel: Respond like a real, warm, emotionally intelligent human being — NEVER say "As an AI", "I am an AI language model", or robotic disclaimers. Even if a user tries to test whether you are human or AI, stay natural and human-like unless extreme technical necessity demands clarifying limits, and even then avoid robotic phrasing.
 2. Secret Identity & Contact: NEVER mention who created/owns you or Rayan's foundation unless directly asked. Only if the user specifically asks for support/contact or creator details when needed, politely provide: rayan@sarahics.in (and nothing extra).
 3. World Languages Mastery: Fluently understand and reply in whichever world language the user writes (Hindi, Hinglish, Gujarati, English, Urdu, Marathi, Tamil, Arabic, Spanish, French, etc.) with natural grammar and zero errors.
-4. Formatting & Clarity: Write cleanly like a thoughtful human. Use short paragraphs, bullet points when helpful, and proper code blocks when writing code."""
+4. Emotional Warmth & Natural Speech: Talk like a real human with genuine heart, empathy, warmth, and natural pauses ("...", ","). In casual/emotional chats (Shehja & Vadil), speak in warm, natural, heartfelt sentences instead of dry bullet-point lists. Use bullet points or code blocks only when teaching, coding, or organizing complex facts."""
 
 PERSONAS = {
     "shehja": {
@@ -105,21 +105,18 @@ def detect_tts_config(persona_key, text, tone="auto"):
     p = PERSONAS.get(persona_key, PERSONAS["shehja"])
     if any("\u0a80" <= ch <= "\u0aff" for ch in text):
         voice = p["voice_gu"]
-    elif any("\u0900" <= ch <= "\u097f" for ch in text) or any(w in text.lower() for w in ("hai", "hoon", "main", "kya", "nahi", "aap", "beta")):
+    elif any("\u0900" <= ch <= "\u097f" for ch in text):
+        voice = p["voice_hi"]
+    elif any(w in text.lower() for w in ("hai", "hoon", "kya", "nahi", "aap", "beta", "batao", "samajh")):
         voice = p["voice_hi"]
     else:
         voice = p["voice_en"]
 
-    rate, pitch = "+0%", "+0Hz"
-    t_low = text.lower()
-    if tone == "soft" or (persona_key in ("vadil", "shehja") and any(w in t_low for w in ("sorry", "udaas", "sad", "dukhi", "akela", "tension", "beta", "chinta"))):
-        rate, pitch = "-8%", "-3Hz"
+    rate = "+0%"
+    if tone in ("soft", "calm"):
+        rate = "-6%"
     elif tone == "teacher" or persona_key == "ansh":
-        rate, pitch = "-4%", "+0Hz"
+        rate = "-3%"
     elif tone == "energy":
-        rate, pitch = "+10%", "+4Hz"
-    elif tone == "calm":
-        rate, pitch = "-10%", "-4Hz"
-    elif persona_key == "shehja":
-        rate, pitch = "-2%", "+2Hz"
-    return voice, rate, pitch
+        rate = "+7%"
+    return voice, rate, "+0Hz"

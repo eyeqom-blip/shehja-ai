@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import hashlib
 import hmac
 import http.cookies
@@ -153,6 +154,70 @@ async def _tts_async(text, voice, rate, pitch):
     return bytes(buf)
 
 
+def roman_hinglish_to_spoken(cfg, text):
+    # If already Devanagari/Gujarati or pure English without Hindi words, return as-is
+    if any("\u0900" <= c <= "\u097f" or "\u0a80" <= c <= "\u0aff" for c in text):
+        return text
+    hindi_markers = ("hai", "hain", "hoon", "ho", "kya", "nahi", "nhi", "aap", "tum", "main", "mein", "kar", "raha", "rahi", "bhai", "yaar", "beta", "chinta", "batao", "samajh", "kaise", "kaisa", "kaisi", "accha", "acha", "theek", "bahut", "dil", "mann")
+    words = re.findall(r"[a-zA-Z]+", text.lower())
+    if not any(w in hindi_markers for w in words):
+        return text
+    if cfg.get("provider") == "gemini" and cfg.get("api_key"):
+        try:
+            prompt = (
+                "Convert the following Hinglish chat reply into natural spoken Hindi in Devanagari script "
+                "(keep English technical terms like Python, AI, PDF in simple natural phonetic/English form, "
+                "add gentle commas and '...' pauses for warm human emotional delivery). "
+                "Return ONLY the spoken text, nothing else:\n\n" + text[:1800]
+            )
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + urllib.parse.quote(cfg["api_key"], safe="")
+            payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}}
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                d = json.loads(resp.read().decode("utf-8"))
+            out = d["candidates"][0]["content"]["parts"][0]["text"].strip()
+            if out:
+                return out
+        except Exception:
+            pass
+    return text
+
+
+def synth_sarvam_wav(text, persona_key, tone="auto"):
+    key = os.environ.get("SARVAM_API_KEY", "").strip()
+    if not key:
+        return None
+    clean = re.sub(r"\[BLACKBOARD\][\s\S]*?\[/BLACKBOARD\]", " blackboard par likh diya hai. ", text)
+    clean = re.sub(r"```[\s\S]*?```", " code screen par hai. ", clean)
+    clean = re.sub(r"[*_#`>]", "", clean)
+    clean = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean).strip()
+    if not clean:
+        return None
+    clean = roman_hinglish_to_spoken(get_config(), clean)
+    lang = "gu-IN" if any("\u0a80" <= c <= "\u0aff" for c in clean) else "hi-IN"
+    if not any("\u0900" <= c <= "\u097f" or "\u0a80" <= c <= "\u0aff" for c in clean):
+        lang = "en-IN"
+    speaker = "ritu" if persona_key == "shehja" else ("ashutosh" if persona_key == "vadil" else "shubh")
+    pace = 0.90 if tone in ("soft", "calm") or persona_key == "vadil" else (1.06 if tone == "energy" else 0.95)
+    payload = {
+        "text": clean[:2400],
+        "target_language_code": lang,
+        "model": "bulbul:v3",
+        "speaker": speaker,
+        "pace": pace,
+        "temperature": 0.85,
+        "speech_sample_rate": 24000,
+    }
+    req = urllib.request.Request(
+        "https://api.sarvam.ai/text-to-speech",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"api-subscription-key": key, "Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=25) as resp:
+        d = json.loads(resp.read().decode("utf-8"))
+    return base64.b64decode(d["audios"][0])
+
 def synth_neural_mp3(text, persona_key, tone="auto"):
     if edge_tts is None:
         return None
@@ -277,12 +342,12 @@ def call_llm_json(cfg, prompt, sys_txt, temp=0.85):
 
 
 MANIFEST_JSON = json.dumps({
-    "name": "Shehja — SR", "short_name": "SR", "start_url": "/", "display": "standalone",
+    "id": "/?sr=v5", "name": "Shehja — SR", "short_name": "SR", "start_url": "/?sr=v5", "display": "standalone",
     "background_color": "#060913", "theme_color": "#10a37f",
     "icons": [
-        {"src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-        {"src": "/icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
-        {"src": "/icon.svg?v=3", "sizes": "any", "type": "image/svg+xml"},
+        {"src": "/icon-192.png?v=5", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+        {"src": "/icon-512.png?v=5", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+        {"src": "/icon.svg?v=5", "sizes": "any", "type": "image/svg+xml"},
     ],
 })
 SW_JS = "self.addEventListener('fetch', function(e) {});"
@@ -327,13 +392,13 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             with open(INDEX_PATH, "rb") as f:
                 self.send_bytes(200, "text/html; charset=utf-8", f.read(), {"Cache-Control": "no-store"})
         elif path == "/manifest.json":
-            self.send_bytes(200, "application/manifest+json; charset=utf-8", MANIFEST_JSON.encode("utf-8"))
+            self.send_bytes(200, "application/manifest+json; charset=utf-8", MANIFEST_JSON.encode("utf-8"), {"Cache-Control": "no-store"})
         elif path == "/icon.svg":
-            self.send_bytes(200, "image/svg+xml; charset=utf-8", ICON_SVG.encode("utf-8"))
+            self.send_bytes(200, "image/svg+xml; charset=utf-8", ICON_SVG.encode("utf-8"), {"Cache-Control": "no-store"})
         elif path == "/icon-192.png":
-            self.send_bytes(200, "image/png", make_sr_png(192))
+            self.send_bytes(200, "image/png", make_sr_png(192), {"Cache-Control": "no-store"})
         elif path == "/icon-512.png":
-            self.send_bytes(200, "image/png", make_sr_png(512))
+            self.send_bytes(200, "image/png", make_sr_png(512), {"Cache-Control": "no-store"})
         elif path == "/sw.js":
             self.send_bytes(200, "application/javascript; charset=utf-8", SW_JS.encode("utf-8"))
         elif path == "/api/auth/me":
@@ -506,14 +571,28 @@ class ShehjaHandler(BaseHTTPRequestHandler):
         if path == "/api/tts":
             try:
                 d = self.read_json()
-                mp3 = synth_neural_mp3(d.get("text") or "", d.get("persona", "shehja"), d.get("tone", "auto"))
+                txt, per, tn = d.get("text") or "", d.get("persona", "shehja"), d.get("tone", "auto")
+                wav, s_err = None, "no_key"
+                if os.environ.get("SARVAM_API_KEY", "").strip():
+                    try:
+                        wav = synth_sarvam_wav(txt, per, tn)
+                        s_err = "ok"
+                    except urllib.error.HTTPError as he:
+                        s_err = f"http_{he.code}_" + he.read().decode("utf-8", errors="ignore")[:120]
+                    except Exception as ex:
+                        s_err = str(ex)[:120]
+                if wav:
+                    self.send_bytes(200, "audio/wav", wav, {"X-TTS-Engine": "sarvam-bulbul-v3"})
+                    return
+                mp3 = synth_neural_mp3(txt, per, tn)
                 if not mp3:
                     self.send_json(503, {"error": "TTS fallback"})
                     return
-                self.send_bytes(200, "audio/mpeg", mp3)
+                self.send_bytes(200, "audio/mpeg", mp3, {"X-TTS-Engine": "edge-tts", "X-Sarvam-Status": s_err.replace("\n", " ")})
             except Exception:
                 self.send_json(503, {"error": "TTS fallback"})
             return
+
 
         if path == "/api/image":
             try:
