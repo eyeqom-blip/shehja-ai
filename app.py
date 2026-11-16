@@ -211,19 +211,23 @@ def roman_hinglish_to_spoken(cfg, text):
     return t
 
 
-def synth_sarvam_wav(text, persona_key, tone="auto"):
+def synth_sarvam_audio(text, persona_key, tone="auto", spoken_override=None):
     key = os.environ.get("SARVAM_API_KEY", "").strip()
     if not key:
-        return None
-    clean = re.sub(r"\[BLACKBOARD\][\s\S]*?\[/BLACKBOARD\]", " blackboard par likh diya hai। ", text)
-    clean = re.sub(r"```[\s\S]*?```", " code screen par hai। ", clean)
-    clean = re.sub(r"[*_#`>]", "", clean)
-    clean = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean).strip()
+        return None, None
+    if spoken_override:
+        clean = spoken_override.strip()
+    else:
+        clean = re.sub(r"\[BLACKBOARD\][\s\S]*?\[/BLACKBOARD\]", " blackboard par likh diya hai। ", text)
+        clean = re.sub(r"```[\s\S]*?```", " code screen par hai। ", clean)
+        clean = re.sub(r"[*_#`>]", "", clean)
+        clean = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean).strip()
+        if not clean:
+            return None, None
+        clean = roman_hinglish_to_spoken(get_config(), clean)
+    clean = re.sub(r"[\.]{2,}|…", ", ", clean or "").strip()
     if not clean:
-        return None
-    clean = roman_hinglish_to_spoken(get_config(), clean)
-    if not clean:
-        return None
+        return None, None
     if clean[-1] not in ("।", ".", "?", "!"):
         clean += "।"
 
@@ -247,22 +251,22 @@ def synth_sarvam_wav(text, persona_key, tone="auto"):
         sp3 = "shubh"
 
     if tone in ("soft", "calm", "simran") or is_emotional or persona_key == "vadil":
-        pace, temp = 0.89, 0.62
+        pace, temp = 0.90, 0.62
     elif tone in ("energy", "kavya") or is_happy:
-        pace, temp = 1.00, 0.72
+        pace, temp = 1.01, 0.72
     elif tone == "teacher" or persona_key == "ansh":
-        pace, temp = 0.94, 0.58
+        pace, temp = 0.95, 0.58
     else:
-        pace, temp = 0.94, 0.66
+        pace, temp = 0.96, 0.65
 
     sp2 = "anushka" if persona_key == "shehja" else "karun"
     attempts = [
-        {"text": clean[:2400], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "temperature": temp, "speech_sample_rate": 24000, "enable_preprocessing": True},
-        {"inputs": [clean[:2400]], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "speech_sample_rate": 24000, "enable_preprocessing": True},
-        {"inputs": [clean[:500]], "target_language_code": lang, "model": "bulbul:v2", "speaker": sp2, "pace": pace, "loudness": 1.2, "speech_sample_rate": 22050, "enable_preprocessing": True},
+        ({"text": clean[:2400], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "temperature": temp, "speech_sample_rate": 22050, "output_audio_codec": "mp3", "enable_preprocessing": True}, "audio/mpeg"),
+        ({"text": clean[:2400], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "temperature": temp, "speech_sample_rate": 22050, "enable_preprocessing": True}, "audio/wav"),
+        ({"inputs": [clean[:500]], "target_language_code": lang, "model": "bulbul:v2", "speaker": sp2, "pace": pace, "loudness": 1.2, "speech_sample_rate": 22050, "enable_preprocessing": True}, "audio/wav"),
     ]
     last_err = None
-    for pl in attempts:
+    for pl, mime in attempts:
         req = urllib.request.Request(
             "https://api.sarvam.ai/text-to-speech",
             data=json.dumps(pl).encode("utf-8"),
@@ -270,9 +274,12 @@ def synth_sarvam_wav(text, persona_key, tone="auto"):
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=25) as resp:
+            with urllib.request.urlopen(req, timeout=20) as resp:
                 d = json.loads(resp.read().decode("utf-8"))
-            return _pad_wav_silence(base64.b64decode(d["audios"][0]), 280)
+            raw_b = base64.b64decode(d["audios"][0])
+            if mime == "audio/wav":
+                raw_b = _pad_wav_silence(raw_b, 260)
+            return raw_b, mime
         except urllib.error.HTTPError as e:
             last_err = e
             if e.code == 400:
@@ -280,7 +287,7 @@ def synth_sarvam_wav(text, persona_key, tone="auto"):
             raise
     if last_err:
         raise last_err
-    return None
+    return None, None
 
 def synth_neural_mp3(text, persona_key, tone="auto"):
     if edge_tts is None:
@@ -636,17 +643,17 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             try:
                 d = self.read_json()
                 txt, per, tn = d.get("text") or "", d.get("persona", "shehja"), d.get("tone", "auto")
-                wav, s_err = None, "no_key"
+                aud, mime, s_err = None, None, "no_key"
                 if os.environ.get("SARVAM_API_KEY", "").strip():
                     try:
-                        wav = synth_sarvam_wav(txt, per, tn)
+                        aud, mime = synth_sarvam_audio(txt, per, tn)
                         s_err = "ok"
                     except urllib.error.HTTPError as he:
-                        s_err = f"http_{he.code}_" + he.read().decode("utf-8", errors="ignore")[:120]
+                        s_err = f"http_{he.code}_" + he.read().decode("utf-8", errors="ignore")[:100]
                     except Exception as ex:
-                        s_err = str(ex)[:120]
-                if wav:
-                    self.send_bytes(200, "audio/wav", wav, {"X-TTS-Engine": "sarvam-bulbul-v3"})
+                        s_err = str(ex)[:100]
+                if aud:
+                    self.send_bytes(200, mime, aud, {"X-TTS-Engine": "sarvam-bulbul-v3"})
                     return
                 mp3 = synth_neural_mp3(txt, per, tn)
                 if not mp3:
@@ -656,7 +663,6 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             except Exception:
                 self.send_json(503, {"error": "TTS fallback"})
             return
-
 
         if path == "/api/image":
             try:
@@ -748,7 +754,11 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     return
                 cfg = get_config()
                 persona = d.get("persona", "shehja")
+                live_mode = bool(d.get("live_mode", False))
+                tone = d.get("tone", "auto")
                 sys_txt = build_system_prompt(persona, d.get("edu"), bool(d.get("group_mode")), cfg["custom_prompt"])
+                if live_mode:
+                    sys_txt += "\n\nLIVE TALK SYNC RULE: Keep reply warm, natural, and crisp (2-4 sentences). At the VERY END, add [SPOKEN]your exact reply converted to smooth spoken Devanagari Hindi with soft commas and '।' (no '...', no emojis)[/SPOKEN] so voice plays instantly."
                 last_txt = history[-1].get("content", "")
                 if cfg["provider"] == "demo":
                     reply = call_demo(last_txt, persona)
@@ -756,6 +766,12 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     reply = call_gemini(history, cfg["model"], cfg["api_key"], sys_txt, bool(d.get("use_search", False)))
                 else:
                     reply = call_openai(history, cfg["model"], cfg["api_key"], sys_txt)
+
+                spoken_txt = None
+                m_sp = re.search(r"\[SPOKEN\]([\s\S]*?)\[/SPOKEN\]", reply)
+                if m_sp:
+                    spoken_txt = m_sp.group(1).strip()
+                    reply = re.sub(r"\s*\[SPOKEN\][\s\S]*?\[/SPOKEN\]", "", reply).strip()
 
                 u = self.get_session_user()
                 cid = d.get("chat_id")
@@ -770,7 +786,21 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     seq = int(cnt_row[0]) if cnt_row else 0
                     db_exec("INSERT INTO user_messages (id, chat_id, seq, role, content, created_at) VALUES (?, ?, ?, 'user', ?, ?)", (uuid.uuid4().hex, cid, seq + 1, last_txt, now))
                     db_exec("INSERT INTO user_messages (id, chat_id, seq, role, content, created_at) VALUES (?, ?, ?, 'assistant', ?, ?)", (uuid.uuid4().hex, cid, seq + 2, reply, now))
-                self.send_json(200, {"reply": reply, "chat_id": cid})
+
+                audio_b64, audio_mime = "", ""
+                if live_mode:
+                    try:
+                        aud, am = synth_sarvam_audio(reply, persona, tone, spoken_override=spoken_txt)
+                        if not aud:
+                            aud = synth_neural_mp3(spoken_txt or reply, persona, tone)
+                            am = "audio/mpeg"
+                        if aud:
+                            audio_b64 = base64.b64encode(aud).decode("ascii")
+                            audio_mime = am or "audio/mpeg"
+                    except Exception:
+                        pass
+
+                self.send_json(200, {"reply": reply, "chat_id": cid, "audio_b64": audio_b64, "audio_mime": audio_mime})
             except Exception as e:
                 self.send_json(500, {"error": str(e)})
             return

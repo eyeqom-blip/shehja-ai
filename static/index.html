@@ -688,7 +688,7 @@
       const hist = chat.messages.slice(-12).map((m, idx, arr) => ({ role: m.role, content: m.content, image: (idx === arr.length - 1) ? (m.image || "") : "", mime: m.mime || "image/jpeg" }));
       const edu = { board: document.getElementById("eduBoard").value, std: document.getElementById("eduStd").value, stream: document.getElementById("eduStream").value, subject: document.getElementById("eduSubject").value.trim(), eduknow: document.getElementById("eduKnowChk").checked };
       try {
-        const payloadStr = JSON.stringify({ chat_id: (currentUser && !isNew) ? currentChatId : null, history: hist, persona: document.getElementById("personaSelect").value, edu, group_mode: isGroupMode, use_search: useLiveSearch });
+        const payloadStr = JSON.stringify({ chat_id: (currentUser && !isNew) ? currentChatId : null, history: hist, persona: document.getElementById("personaSelect").value, edu, group_mode: isGroupMode, use_search: useLiveSearch, live_mode: isLiveTalk, tone: document.getElementById("voiceTone").value });
         let res;
         try {
           res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: payloadStr });
@@ -700,7 +700,7 @@
         if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
         chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();
         aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
-        if (isLiveTalk) { autoSpeakAndLoop(aiC.querySelector(".speak-btn"), data.reply); }
+        if (isLiveTalk) { autoSpeakAndLoop(aiC.querySelector(".speak-btn"), data.reply, data.audio_b64, data.audio_mime); }
       } catch (err) {
         aiB.innerHTML = "<p style='color:#f87171;'>⚠️ " + escapeHtml(err.message) + "</p>";
         if (isLiveTalk) { setLiveStatus("⚠️ Network slow — dubara sun rahi hoon..."); setTimeout(startLiveListening, 1500); }
@@ -933,7 +933,46 @@
       try { liveRec.start(); } catch (e) {}
     }
 
-    async function autoSpeakAndLoop(btn, rawText) {
+    async function autoSpeakAndLoop(btn, rawText, inlineB64, inlineMime) {
+      if (!isLiveTalk) return;
+      isAiSpeaking = true;
+      setLiveStatus("🔊 Jawab bol rahi hoon...");
+      if (btn) { btn.dataset.playing = "1"; btn.textContent = "⏹️ Roko"; }
+      const finishSpeak = () => {
+        isAiSpeaking = false;
+        if (btn) { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; }
+        if (isLiveTalk) setTimeout(startLiveListening, 450);
+      };
+      try {
+        let blob;
+        if (inlineB64) {
+          const bin = atob(inlineB64), bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          blob = new Blob([bytes], { type: inlineMime || "audio/mpeg" });
+        } else {
+          const res = await fetch("/api/tts", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: rawText, persona: document.getElementById("personaSelect").value, tone: document.getElementById("voiceTone").value })
+          });
+          if (!res.ok) throw new Error("fallback");
+          blob = await res.blob();
+        }
+        const url = URL.createObjectURL(blob);
+        liveAudio.src = url;
+        liveAudio.onended = () => { URL.revokeObjectURL(url); finishSpeak(); };
+        liveAudio.onerror = finishSpeak;
+        await liveAudio.play();
+        return;
+      } catch (e) {
+        const tick = String.fromCharCode(96);
+        const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
+        u.onend = finishSpeak; u.onerror = finishSpeak;
+        window.speechSynthesis.speak(u);
+      }
+    }
+    async function _unusedOldSpeak(btn, rawText) {
       if (!isLiveTalk) return;
       isAiSpeaking = true;
       setLiveStatus("🔊 Jawab bol rahi hoon...");
