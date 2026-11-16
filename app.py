@@ -198,24 +198,32 @@ def synth_sarvam_wav(text, persona_key, tone="auto"):
     if not any("\u0900" <= c <= "\u097f" or "\u0a80" <= c <= "\u0aff" for c in clean):
         lang = "en-IN"
     speaker = "ritu" if persona_key == "shehja" else ("ashutosh" if persona_key == "vadil" else "shubh")
-    pace = 0.90 if tone in ("soft", "calm") or persona_key == "vadil" else (1.06 if tone == "energy" else 0.95)
-    payload = {
-        "text": clean[:2400],
+    pace = 0.92 if tone in ("soft", "calm") or persona_key == "vadil" else (1.06 if tone == "energy" else 0.96)
+    base_payload = {
+        "inputs": [clean[:2400]],
         "target_language_code": lang,
         "model": "bulbul:v3",
         "speaker": speaker,
         "pace": pace,
-        "temperature": 0.85,
         "speech_sample_rate": 24000,
+        "enable_preprocessing": True,
     }
-    req = urllib.request.Request(
-        "https://api.sarvam.ai/text-to-speech",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"api-subscription-key": key, "Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=25) as resp:
-        d = json.loads(resp.read().decode("utf-8"))
+    def call_s(pl):
+        req = urllib.request.Request(
+            "https://api.sarvam.ai/text-to-speech",
+            data=json.dumps(pl).encode("utf-8"),
+            headers={"api-subscription-key": key, "Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    try:
+        d = call_s({**base_payload, "temperature": 0.85})
+    except urllib.error.HTTPError as e:
+        if e.code == 400:
+            d = call_s(base_payload)
+        else:
+            raise
     return base64.b64decode(d["audios"][0])
 
 def synth_neural_mp3(text, persona_key, tone="auto"):
