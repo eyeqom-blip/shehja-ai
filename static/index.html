@@ -852,6 +852,11 @@
           await new Promise(r => setTimeout(r, 1500));
           res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: payloadStr });
         }
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) {
+          await new Promise(r => setTimeout(r, 2500));
+          res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: payloadStr });
+        }
         const data = await res.json(); if (!res.ok) throw new Error(data.error || "Server error");
         if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
         chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();

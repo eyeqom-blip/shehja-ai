@@ -40,7 +40,7 @@ if USE_PG:
 _PPT_CACHE = {}
 _XLSX_CACHE = {}
 _IMG_CACHE = {}
-FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-3.6-flash", "gemini-3.8-flash"]
 
 
 def db_connect():
@@ -172,7 +172,7 @@ def get_config():
     rows = db_exec("SELECT key, value FROM config", fetch="all") or []
     cfg = {k: v for k, v in rows}
     return {
-        "provider": cfg.get("provider", "demo"), "model": cfg.get("model", "gemini-3.5-flash-lite"),
+        "provider": cfg.get("provider", "demo"), "model": (os.environ.get("AI_MODEL") or ("gemini-3.5-flash-lite" if cfg.get("model") == "gemini-3.8-flash" else cfg.get("model", "gemini-3.5-flash-lite"))),
         "api_key": cfg.get("api_key", ""), "admin_pin": cfg.get("admin_pin") or os.environ.get("SHEHJA_PIN", "1234"),
         "custom_prompt": cfg.get("custom_prompt", ""),
     }
@@ -401,7 +401,7 @@ def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.6
         if with_tools:
             payload["tools"] = [{"google_search": {}}]
         req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=25) as resp:
+        with urllib.request.urlopen(req, timeout=(16 if "lite" in mdl else 40)) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     data, last_err = None, "API error"
@@ -431,6 +431,20 @@ def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.6
             continue
 
     if data is None:
+        gkey = os.environ.get("GROQ_API_KEY", "").strip()
+        if gkey:
+            try:
+                gmsgs = [{"role": "system", "content": system_text}] + [{"role": ("assistant" if m.get("role") == "assistant" else "user"), "content": (m.get("content") or "Hello")} for m in history]
+                greq = urllib.request.Request(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    data=json.dumps({"model": "llama-3.3-70b-versatile", "messages": gmsgs, "temperature": temp}).encode("utf-8"),
+                    headers={"Content-Type": "application/json", "Authorization": f"Bearer {gkey}", "User-Agent": "Mozilla/5.0"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(greq, timeout=20) as gresp:
+                    return json.loads(gresp.read().decode("utf-8"))["choices"][0]["message"]["content"]
+            except Exception:
+                pass
         raise RuntimeError(last_err)
     cand = (data.get("candidates") or [{}])[0]
     parts = cand.get("content", {}).get("parts") or []
