@@ -40,7 +40,7 @@ if USE_PG:
 _PPT_CACHE = {}
 _XLSX_CACHE = {}
 _IMG_CACHE = {}
-FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-flash-latest"]
 
 
 def db_connect():
@@ -422,6 +422,8 @@ def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.6
                 except Exception:
                     pass
             if e.code in (400, 403, 404, 429, 500, 503):
+                if e.code in (429, 503):
+                    time.sleep(1.0)
                 continue
             raise RuntimeError(last_err)
         except (TimeoutError, urllib.error.URLError, OSError) as e:
