@@ -27,6 +27,7 @@ try:
 except Exception:
     edge_tts = None
 
+START_TIME = int(time.time())
 PORT = int(os.environ.get("PORT", 8080))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "shehja.db")
@@ -59,16 +60,28 @@ def db_connect():
 
 def db_exec(sql, params=(), fetch=None):
     q = sql.replace("?", "%s") if USE_PG else sql
-    conn = db_connect()
-    try:
-        cur = conn.cursor()
-        cur.execute(q, params)
-        res = cur.fetchone() if fetch == "one" else (cur.fetchall() if fetch == "all" else None)
-        conn.commit()
-        return res
-    finally:
-        conn.close()
-
+    last_ex = None
+    for attempt in range(2):
+        conn = None
+        try:
+            conn = db_connect()
+            cur = conn.cursor()
+            cur.execute(q, params)
+            res = cur.fetchone() if fetch == "one" else (cur.fetchall() if fetch == "all" else None)
+            conn.commit()
+            return res
+        except Exception as e:
+            last_ex = e
+            if attempt == 0:
+                time.sleep(0.8)
+                continue
+            raise last_ex
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 def hash_secret(plain):
     salt = os.urandom(16).hex()
@@ -496,6 +509,24 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 return
             rows = db_exec("SELECT role, content FROM user_messages WHERE chat_id = ? ORDER BY seq ASC", (cid,), fetch="all") or []
             self.send_json(200, [{"role": r[0], "content": r[1]} for r in rows])
+        elif path == "/health":
+            try:
+                db_exec("SELECT 1", fetch="one")
+                self.send_json(200, {"status": "ok", "db": "neon" if USE_PG else "sqlite", "uptime_sec": int(time.time() - START_TIME)})
+            except Exception as e:
+                self.send_json(500, {"status": "error", "error": str(e)})
+        elif path == "/api/admin/backup":
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            pin = (qs.get("pin") or [""])[0].strip()
+            cfg = get_config()
+            if pin != cfg["admin_pin"]:
+                self.send_json(403, {"error": "Wrong PIN"})
+                return
+            users = db_exec("SELECT id, name, email, sec_q, created_at FROM users", fetch="all") or []
+            chats = db_exec("SELECT id, user_id, title, updated_at FROM user_chats", fetch="all") or []
+            msgs = db_exec("SELECT id, chat_id, seq, role, content, created_at FROM user_messages", fetch="all") or []
+            bk = json.dumps({"users": users, "chats": chats, "messages": msgs}, default=str).encode("utf-8")
+            self.send_bytes(200, "application/json", bk, {"Content-Disposition": 'attachment; filename="shehja_backup.json"'})
         elif path == "/api/panchang":
             self.send_json(200, get_today_panchang())
         elif path == "/api/settings":
