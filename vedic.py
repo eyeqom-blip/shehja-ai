@@ -322,3 +322,155 @@ def render_kundli_svg(k):
         '<polygon points="160,10 310,160 160,310 10,160" fill="none" stroke="#f59e0b" stroke-width="1.8"/>'
         + "".join(texts) + "</svg>"
     )
+
+
+NUM_RULERS = {
+    1: ("Surya (Sun)", "Sunday", "Gold / Orange", [1, 2, 3, 5, 9], [8]),
+    2: ("Chandra (Moon)", "Monday", "White / Cream", [1, 2, 3, 5], [4, 8, 9]),
+    3: ("Guru (Jupiter)", "Thursday", "Yellow / Saffron", [1, 2, 3, 5, 9], [6]),
+    4: ("Rahu", "Saturday / Sunday", "Electric Blue / Grey", [1, 5, 6, 7], [2, 4, 8, 9]),
+    5: ("Budh (Mercury)", "Wednesday", "Green / Emerald", [1, 2, 3, 5, 6], []),
+    6: ("Shukra (Venus)", "Friday", "White / Pink / Light Blue", [1, 5, 6, 7], [3]),
+    7: ("Ketu", "Monday / Wednesday", "Light Yellow / White", [1, 4, 5, 6], [2, 8]),
+    8: ("Shani (Saturn)", "Saturday", "Dark Blue / Black", [3, 5, 6, 7], [1, 2, 4, 8, 9]),
+    9: ("Mangal (Mars)", "Tuesday", "Red / Coral", [1, 2, 3, 5], [4, 8]),
+}
+
+LOSHU_PLANES = [
+    ("Golden Rajyog (4-5-6)", (4, 5, 6)),
+    ("Silver Rajyog (2-5-8)", (2, 5, 8)),
+    ("Mental Plane (4-9-2)", (4, 9, 2)),
+    ("Emotional Plane (3-5-7)", (3, 5, 7)),
+    ("Practical Plane (8-1-6)", (8, 1, 6)),
+    ("Thought Plane (4-3-8)", (4, 3, 8)),
+    ("Willpower Plane (9-5-1)", (9, 5, 1)),
+    ("Action Plane (2-7-6)", (2, 7, 6)),
+]
+
+TAROT_DECK = [
+    ("0. The Fool", "Nayi shuruaat, himmat aur bina dar ke aage badhne ka sanket."),
+    ("I. The Magician", "Aapke paas saare hunar aur resources maujood hain — bas action lene ka waqt hai."),
+    ("II. The High Priestess", "Apne dil ki aawaz (intuition) par bharosa karein; abhi sab kuch khul kar samne aayega."),
+    ("III. The Empress", "Samriddhi, family khushhali, creativity aur growth ka shubh samay."),
+    ("IV. The Emperor", "Discipline, leadership aur majboot faislon se sthirta aayegi."),
+    ("V. The Hierophant", "Parampara, guru ya bade-buzurgon ki salah se sahi raasta milega."),
+    ("VI. The Lovers", "Rishton mein samanjasya, dil se liya gaya sahi faisla aur prem."),
+    ("VII. The Chariot", "Mehnat aur focus se rukawaton par jeet aur safalta."),
+    ("VIII. Strength", "Shant mann, sabr aur andarooni himmat se har mushkil aasaan hogi."),
+    ("IX. The Hermit", "Thoda ruk kar khud par dhyaan dene aur gehri soch se sahi jawab paane ka samay."),
+    ("X. Wheel of Fortune", "Kismat ka pahiya ghoom raha hai — accha badlav aur naye avsar aa rahe hain."),
+    ("XI. Justice", "Sachai aur imaandari ka phal milega; kanooni ya zaroori faisle aapke haq mein honge."),
+    ("XII. The Hanged Man", "Naye nazariye se dekhein; thoda sabr rakhna abhi sabse behtar hai."),
+    ("XIII. Transformation", "Purani chinta khatam hokar naye behtar daur ki shuruaat ho rahi hai."),
+    ("XIV. Temperance", "Balance aur shanti banaye rakhein — jaldbazi se bachein, kaam banega."),
+    ("XV. The Devil (Attachment)", "Kisi buri aadat, stress ya galat attachment se bahar nikalne ki zaroorat hai."),
+    ("XVI. The Tower", "Achanak bada badlav purani kamzor neev hata kar nayi majboot shuruaat layega."),
+    ("XVII. The Star", "Umeed, healing aur manokaamna poori hone ka behad shubh sanket."),
+    ("XVIII. The Moon", "Mann ka bharam ya confusion door hoga; sach jaan kar hi kadam badhayein."),
+    ("XIX. The Sun", "Khushiyan, safalta, chamak aur har kaam mein roshni aur jeet!"),
+    ("XX. Judgement", "Pichle karmon ka accha phal aur zindagi mein naya uday."),
+    ("XXI. The World", "Ek bada safar ya lakshya safalta se poora hone wala hai!"),
+    ("Ace of Pentacles", "Naye dhan, job, business ya property ka shubh aagaman."),
+    ("Ace of Cups", "Naya pyaar, emotional khushi aur dil ko sukoon dene wali khabar."),
+    ("Ace of Wands", "Naya idea, josh aur shandar career/creative shuruaat."),
+    ("Ace of Swords", "Tez dimaag, clear sachai aur sahi faisle se bada breakthrough."),
+    ("Six of Wands", "Samman, tareef aur mehnat ke baad public jeet!"),
+    ("Ten of Pentacles", "Parivaar ki barkat, sthirta aur lambe samay ki aarthik suraksha."),
+]
+
+
+def compute_numerology(dob, name="", mother_name="", gender="Male", extra_num="", prashna_num=""):
+    digits = [int(c) for c in (dob or "2000-01-01") if c.isdigit()]
+    parts = (dob or "2000-01-01").split("-")
+    year = int(parts[0]) if len(parts) >= 1 and parts[0].isdigit() else 2000
+    day = int(parts[2]) if len(parts) >= 3 and parts[2].isdigit() else 1
+
+    mulank = _reduce_num(day)
+    bhagyank = _reduce_num(sum(digits))
+
+    yr_sum = _reduce_num(sum(int(c) for c in str(year)))
+    if (gender or "Male").lower().startswith("f"):
+        kua = _reduce_num(4 + yr_sum)
+        if kua == 5:
+            kua = 8
+    else:
+        kua = _reduce_num(11 - yr_sum)
+        if kua == 5:
+            kua = 2
+
+    chaldean_raw = sum(CHALDEAN.get(ch.upper(), 0) for ch in (name or ""))
+    naam_ank = _reduce_num(chaldean_raw) if chaldean_raw > 0 else 0
+    matri_ank = _name_num(mother_name)
+
+    counts = {i: 0 for i in range(1, 10)}
+    for d in digits:
+        if d > 0:
+            counts[d] += 1
+    if day > 9 or day not in digits:
+        counts[mulank] += 1
+    counts[bhagyank] += 1
+
+    active_planes = [pname for pname, tpl in LOSHU_PLANES if all(counts[x] > 0 for x in tpl)]
+    missing = [i for i in range(1, 10) if counts[i] == 0]
+    strong = [f"{i} ({counts[i]}x)" for i in range(1, 10) if counts[i] >= 2]
+
+    ruler, lucky_day, lucky_color, friends, enemies = NUM_RULERS[mulank]
+    _, _, _, b_friends, _ = NUM_RULERS[bhagyank]
+    common_lucky = sorted(list(set(friends) & set(b_friends))) or friends
+
+    extra_digits = [int(c) for c in (extra_num or "") if c.isdigit()]
+    extra_red = _reduce_num(sum(extra_digits)) if extra_digits else 0
+    extra_status = ""
+    if extra_red:
+        if extra_red in common_lucky or extra_red in (mulank, bhagyank):
+            extra_status = f"Shubh & Lucky ✅ (Total {extra_red} aapke Mulank {mulank} & Bhagyank {bhagyank} ka mitr hai)"
+        elif extra_red in enemies:
+            extra_status = f"Savdhani ⚠️ (Total {extra_red} aapke Mulank {mulank} se thoda virodhi hai)"
+        else:
+            extra_status = f"Samanya / Neutral 🙂 (Total {extra_red})"
+
+    p_num = int(prashna_num) if str(prashna_num).isdigit() else 0
+    p_red = _reduce_num(p_num) if p_num > 0 else 0
+
+    return {
+        "name": name or "Jatak",
+        "mother_name": mother_name,
+        "dob": dob,
+        "gender": gender,
+        "mulank": mulank,
+        "bhagyank": bhagyank,
+        "kua": kua,
+        "naam_ank": naam_ank,
+        "chaldean_raw": chaldean_raw,
+        "matri_ank": matri_ank,
+        "ruler": ruler,
+        "lucky_day": lucky_day,
+        "lucky_color": lucky_color,
+        "lucky_numbers": common_lucky,
+        "counts": counts,
+        "active_planes": active_planes,
+        "missing": missing,
+        "strong": strong,
+        "extra_num": extra_num,
+        "extra_red": extra_red,
+        "extra_status": extra_status,
+        "prashna_num": p_num,
+        "prashna_red": p_red,
+    }
+
+
+def render_loshu_svg(counts):
+    grid = [[4, 9, 2], [3, 5, 7], [8, 1, 6]]
+    cells = []
+    for r in range(3):
+        for c in range(3):
+            num = grid[r][c]
+            cnt = counts.get(num, 0)
+            x, y = 10 + c * 80, 10 + r * 80
+            fill = "#1e293b" if cnt > 0 else "#0f172a"
+            stroke = "#f59e0b" if cnt >= 2 else ("#10b981" if cnt == 1 else "#334155")
+            txt = str(num) * min(cnt, 4) if cnt > 0 else "--"
+            tcol = "#fbbf24" if cnt >= 2 else ("#34d399" if cnt == 1 else "#64748b")
+            cells.append(f'<rect x="{x}" y="{y}" width="74" height="74" rx="10" fill="{fill}" stroke="{stroke}" stroke-width="2"/>')
+            cells.append(f'<text x="{x+37}" y="{y+44}" text-anchor="middle" fill="{tcol}" font-size="22" font-weight="bold">{txt}</text>')
+    return '<svg viewBox="0 0 260 260" width="210" height="210" style="background:#090d16;border:2px solid #f59e0b;border-radius:12px;display:block;margin:8px auto;">' + "".join(cells) + "</svg>"

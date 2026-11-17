@@ -264,6 +264,7 @@
       <div class="live-banner" id="liveBanner"><span id="liveStatus">🎙️ Sun rahi hoon... (Boliye)</span><div style="display:flex;gap:6px;"><button onclick="interruptAndListen()">🎙️ Abhi Bolo</button><button onclick="toggleLiveTalk()">⏹️ Band</button></div></div>
       <div class="toolbar-row">
         <button class="tool-pill" style="border-color:#f59e0b;color:#fcd34d;" onclick="openKundliModal()">🪔 Kundli</button>
+        <button class="tool-pill" style="border-color:#a855f7;color:#d8b4fe;" onclick="openNumerologyDirect()">🔢 Num/Tarot</button>
         <button class="tool-pill" style="border-color:#fb7185;color:#fda4af;" onclick="openKitchenModal()">👩‍🍳 Kitchen</button>
         <button class="tool-pill" onclick="openPptModal()">📊 PPT</button>
         <button class="tool-pill" onclick="openXlsxModal()">📗 Excel</button>
@@ -333,8 +334,10 @@
         <h2 style="margin:0;color:#fbbf24;">🪔 Shastri Ji — Jyotish Kendra</h2>
         <button class="btn-secondary" style="padding:4px 10px;" onclick="closeModal('kundliModal')">✕</button>
       </div>
-      <div class="tabs">
+      <div class="tabs" style="flex-wrap:wrap;">
         <button class="tab-btn active" id="kTabK" onclick="switchKTab('k')">📜 Kundli</button>
+        <button class="tab-btn" id="kTabN" onclick="switchKTab('n')">🔢 Numerology</button>
+        <button class="tab-btn" id="kTabT" onclick="switchKTab('t')">🃏 Tarot</button>
         <button class="tab-btn" id="kTabM" onclick="switchKTab('m')">💑 Milan</button>
         <button class="tab-btn" id="kTabP" onclick="switchKTab('p')">📅 Panchang</button>
       </div>
@@ -353,6 +356,29 @@
           <button class="btn-secondary" onclick="palmScanPrompt()">🖐️ Haath ki Lakir</button>
         </div>
       </div>
+      <div id="kBoxN" style="display:none;">
+        <div class="form-group"><label>Aapka Naam (Chaldean Name Check)</label><input type="text" id="nName" placeholder="e.g. Rayan" /></div>
+        <div class="form-group"><label>Maa ka Naam (Optional)</label><input type="text" id="nMother" placeholder="Maa ka naam..." /></div>
+        <div style="display:flex;gap:8px;">
+          <div class="form-group" style="flex:1;"><label>Birth Date</label><input type="date" id="nDob" value="2000-01-15" /></div>
+          <div class="form-group" style="flex:1;"><label>Gender (Kua No.)</label><select id="nGender"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div class="form-group" style="flex:1;"><label>📱 Mobile / Vehicle No.</label><input type="text" id="nExtra" placeholder="e.g. 9876543210" /></div>
+          <div class="form-group" style="flex:1;"><label>🔢 Prashna (1-108)</label><input type="number" id="nPrashna" min="1" max="108" placeholder="Optional" /></div>
+        </div>
+        <div class="form-group"><label>Mann ka Koi Sawaal? (Optional)</label><input type="text" id="nQuestion" placeholder="e.g. Naya business ya job kab shuru karein?" /></div>
+        <div class="error-msg" id="nErr"></div>
+        <button class="btn-primary" style="width:100%;" id="nBtn" onclick="generateNumerology()">🔢 Lo Shu Grid & Numerology Report</button>
+      </div>
+
+      <div id="kBoxT" style="display:none;">
+        <div class="form-group"><label>Apne Mann mein Sawaal Sochein & Yahan Likhein</label><textarea id="tQuestion" rows="2" placeholder="e.g. Mera aane wala career / business / rishta kaisa rahega?"></textarea></div>
+        <div style="background:#101318;border:1px dashed #f59e0b;border-radius:12px;padding:14px;text-align:center;margin-bottom:10px;font-size:28px;letter-spacing:8px;">🂠 🂠 🂠</div>
+        <div class="error-msg" id="tErr"></div>
+        <button class="btn-primary" style="width:100%;" id="tBtn" onclick="generateTarot()">🃏 Shuffle & Draw 3 Tarot Cards</button>
+      </div>
+
       <div id="kBoxM" style="display:none;">
         <div class="form-group"><label>Ladke ka Naam & Birth (Date / Time / City)</label><input type="text" id="mName1" placeholder="Naam..." style="margin-bottom:6px;" /><div style="display:flex;gap:5px;"><input type="date" id="mDob1" value="1999-05-10" /><input type="time" id="mTob1" value="10:00" /></div><input type="text" id="mCity1" value="Ahmedabad" placeholder="City..." style="margin-top:6px;" /></div>
         <div class="form-group"><label>Ladki ka Naam & Birth (Date / Time / City)</label><input type="text" id="mName2" placeholder="Naam..." style="margin-bottom:6px;" /><div style="display:flex;gap:5px;"><input type="date" id="mDob2" value="2001-08-20" /><input type="time" id="mTob2" value="14:15" /></div><input type="text" id="mCity2" value="Surat" placeholder="City..." style="margin-top:6px;" /></div>
@@ -965,12 +991,62 @@
 
     function openKundliModal() { switchKTab("k"); document.getElementById("kundliModal").classList.add("open"); }
     function switchKTab(tp) {
-      ["k","m","p"].forEach(x => {
+      ["k","n","t","m","p"].forEach(x => {
         document.getElementById("kTab" + x.toUpperCase()).classList.toggle("active", x === tp);
         document.getElementById("kBox" + x.toUpperCase()).style.display = (x === tp) ? "block" : "none";
       });
       if (tp === "p") loadPanchang();
     }
+    function openNumerologyDirect() { openKundliModal(); switchKTab("n"); }
+    async function generateNumerology() {
+      const err = document.getElementById("nErr"); err.style.display = "none";
+      const btn = document.getElementById("nBtn"); btn.disabled = true; btn.textContent = "⏳ Lo Shu Grid ban rahi hai...";
+      try {
+        const res = await fetch("/api/numerology", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("nName").value.trim(), mother_name: document.getElementById("nMother").value.trim(),
+            dob: document.getElementById("nDob").value, gender: document.getElementById("nGender").value,
+            extra_num: document.getElementById("nExtra").value.trim(), prashna_num: document.getElementById("nPrashna").value.trim(),
+            question: document.getElementById("nQuestion").value.trim()
+          })
+        });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("kundliModal");
+        document.getElementById("personaSelect").value = "shastri"; onPersonaChange();
+        welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        const nu = d.num;
+        appendMessageDOM("user", "🔢 Numerology Report: " + nu.name + " (" + nu.dob + ")");
+        const { bubble, col } = appendMessageDOM("assistant", "");
+        const box = '<div class="export-card" style="border-color:#a855f7;margin-bottom:10px;"><h3 style="color:#d8b4fe;">🔢 ' + escapeHtml(nu.name) + ' — Lo Shu & Ank Jyotish</h3>' + d.svg + '<p style="font-size:13px;line-height:1.6;"><b>Mulank:</b> ' + nu.mulank + ' (' + escapeHtml(nu.ruler) + ') | <b>Bhagyank:</b> ' + nu.bhagyank + ' | <b>Kua:</b> ' + nu.kua + '<br><b>Name Ank:</b> ' + nu.chaldean_raw + ' ➔ ' + nu.naam_ank + ' | <b>Lucky Nos:</b> ' + escapeHtml(nu.lucky_numbers.join(", ")) + '<br><b>Lucky Day:</b> ' + escapeHtml(nu.lucky_day) + ' | <b>Color:</b> ' + escapeHtml(nu.lucky_color) + '<br><b>Rajyogs:</b> ' + escapeHtml(nu.active_planes.join(", ") || "Balanced") + '<br><b>Missing Nos:</b> ' + escapeHtml(nu.missing.join(", ") || "None") + (nu.extra_status ? '<br><b>Mobile/Vehicle:</b> ' + escapeHtml(nu.extra_status) : '') + '</p></div>';
+        bubble.innerHTML = box + formatMarkdown(d.reading);
+        addActionButtons(col, "Numerology Report: " + nu.name + "\nMulank: " + nu.mulank + " | Bhagyank: " + nu.bhagyank + "\n\n" + d.reading);
+        scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "🔢 Lo Shu Grid & Numerology Report"; }
+    }
+    async function generateTarot() {
+      const err = document.getElementById("tErr"); err.style.display = "none";
+      const btn = document.getElementById("tBtn"); btn.disabled = true; btn.textContent = "⏳ Cards shuffle ho rahe hain...";
+      try {
+        const res = await fetch("/api/tarot", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: document.getElementById("tQuestion").value.trim() })
+        });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("kundliModal");
+        document.getElementById("personaSelect").value = "shastri"; onPersonaChange();
+        welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        appendMessageDOM("user", "🃏 Tarot Reading: " + d.question);
+        const { bubble, col } = appendMessageDOM("assistant", "");
+        const cardsHtml = d.cards.map(c => '<div class="ppt-slide-mini" style="border-color:#f59e0b;"><strong style="color:#fbbf24;">🃏 ' + escapeHtml(c.pos) + ': ' + escapeHtml(c.name) + '</strong><span style="font-size:12.5px;color:#cbd5e1;">' + escapeHtml(c.meaning) + '</span></div>').join("");
+        bubble.innerHTML = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">🃏 3-Card Tarot Spread</h3>' + cardsHtml + '</div>' + formatMarkdown(d.reading);
+        addActionButtons(col, "Tarot Reading: " + d.question + "\n\n" + d.reading);
+        scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "🃏 Shuffle & Draw 3 Tarot Cards"; }
+    }
+
     async function loadPanchang() {
       const box = document.getElementById("panchangInfo");
       try {

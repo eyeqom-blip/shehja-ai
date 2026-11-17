@@ -20,7 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from exporters import ICON_SVG, LAYOUTS, build_pptx_bytes, build_xlsx_bytes, make_sr_png
 from personas import build_system_prompt, detect_tts_config
-from vedic import compute_gun_milan, compute_kundli, get_today_panchang, render_kundli_svg
+from vedic import TAROT_DECK, compute_gun_milan, compute_kundli, compute_numerology, get_today_panchang, render_kundli_svg, render_loshu_svg
 
 try:
     import edge_tts
@@ -714,6 +714,67 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             db_exec("UPDATE users SET pass_hash = ? WHERE email = ?", (hash_secret(pw), email))
             db_exec("DELETE FROM otps WHERE email = ?", (email,))
             self.send_json(200, {"ok": True})
+            return
+
+        if path == "/api/numerology":
+            try:
+                d = self.read_json()
+                nu = compute_numerology(
+                    d.get("dob", "2000-01-01"), d.get("name", ""),
+                    d.get("mother_name", ""), d.get("gender", "Male"),
+                    d.get("extra_num", ""), d.get("prashna_num", ""),
+                )
+                svg = render_loshu_svg(nu["counts"])
+                cfg = get_config()
+                if cfg["provider"] == "demo":
+                    reading = f"Pranam {nu['name']}! Aapka Mulank **{nu['mulank']}**, Bhagyank **{nu['bhagyank']}**, Kua **{nu['kua']}** aur Naam Ank **{nu['naam_ank']}** hai. Lucky Numbers: **{nu['lucky_numbers']}**. *(Demo Mode)*"
+                else:
+                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
+                    q_txt = (
+                        f"Complete Vedic & Lo Shu Numerology Report:\n"
+                        f"- Naam: {nu['name']} (Chaldean Total: {nu['chaldean_raw']} -> {nu['naam_ank']}), Maa ka Naam Ank: {nu['matri_ank']}\n"
+                        f"- Birth Date: {nu['dob']} ({nu['gender']})\n"
+                        f"- Mulank (Driver): {nu['mulank']} ({nu['ruler']}), Bhagyank (Conductor): {nu['bhagyank']}, Kua Number: {nu['kua']}\n"
+                        f"- Active Lo Shu Rajyogs/Planes: {', '.join(nu['active_planes']) or 'Mixed'}\n"
+                        f"- Strong/Repeated Numbers: {', '.join(nu['strong']) or 'Balanced'}\n"
+                        f"- Missing Numbers: {nu['missing']}\n"
+                        f"- Lucky Days: {nu['lucky_day']}, Lucky Colors: {nu['lucky_color']}, Lucky Numbers: {nu['lucky_numbers']}\n"
+                        f"- Mobile/Vehicle Number Check ({nu['extra_num'] or 'None'}): {nu['extra_status'] or 'N/A'}\n"
+                        f"- Prashna Number (1-108): {nu['prashna_num'] or 'N/A'} (Reduced: {nu['prashna_red']}) | Question: {d.get('question') or 'General Life Guidance'}\n\n"
+                        "Shastri Ji (Master Numerologist), is exact ank-jyotish aur Lo Shu Grid ke aadhar par Personality, Career/Business, Name Spelling Harmony, Missing Number ke Simple Remedies/Upay, Mobile/Vehicle check (agar diya ho), aur Prashna/Future Guidance warm Hinglish mein vistaar se batayein."
+                    )
+                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
+                self.send_json(200, {"num": nu, "svg": svg, "reading": reading})
+            except Exception as e:
+                self.send_json(500, {"error": str(e)})
+            return
+
+        if path == "/api/tarot":
+            try:
+                d = self.read_json()
+                question = (d.get("question") or "Mera aane wala samay kaisa rahega?").strip()
+                picks = random.sample(TAROT_DECK, 3)
+                cards = [
+                    {"pos": "1. Past / Jad", "name": picks[0][0], "meaning": picks[0][1]},
+                    {"pos": "2. Present / Abhi", "name": picks[1][0], "meaning": picks[1][1]},
+                    {"pos": "3. Future & Salah", "name": picks[2][0], "meaning": picks[2][1]},
+                ]
+                cfg = get_config()
+                if cfg["provider"] == "demo":
+                    reading = f"Aapke 3 Tarot Cards: **{cards[0]['name']}**, **{cards[1]['name']}**, aur **{cards[2]['name']}**. *(Demo Mode)*"
+                else:
+                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
+                    q_txt = (
+                        f"3-Card Tarot Reading for Question: '{question}'\n"
+                        f"- {cards[0]['pos']}: {cards[0]['name']} ({cards[0]['meaning']})\n"
+                        f"- {cards[1]['pos']}: {cards[1]['name']} ({cards[1]['meaning']})\n"
+                        f"- {cards[2]['pos']}: {cards[2]['name']} ({cards[2]['meaning']})\n\n"
+                        "Shastri Ji, in 3 Tarot cards ke aadhar par user ke sawaal ka heartfelt, clear aur sakaratmak (positive) guidance Hinglish mein samjhayein."
+                    )
+                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
+                self.send_json(200, {"question": question, "cards": cards, "reading": reading})
+            except Exception as e:
+                self.send_json(500, {"error": str(e)})
             return
 
         if path == "/api/kundli":
