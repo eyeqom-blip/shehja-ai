@@ -234,6 +234,17 @@
       <label><input type="checkbox" id="eduKnowChk" /> 🎓 EduKnow (College+)</label>
     </div>
 
+        <div class="edu-bar" id="sweetyBar" style="background:#261219;border-color:#881337;">
+      <label style="color:#fda4af;">👥 Log: <input type="number" id="sweetyMembers" min="1" max="100" value="4" style="width:52px;border-color:#9f1239;" onchange="syncSweetyQuick()" /></label>
+      <select id="sweetyOccasion" style="border-color:#9f1239;" onchange="syncSweetyQuick()">
+        <option value="Single Person Easy (15-min quick)">👤 Single (Easy Cook)</option>
+        <option value="Regular Family" selected>🏠 Regular Family</option>
+        <option value="Mahemaan Special (Party/Guest Menu)">🎉 Mahemaan Special</option>
+      </select>
+      <button class="tool-pill" style="border-color:#10a37f;color:#34d399;" onclick="askSweetySabzi()">🥬 Sabzi List</button>
+      <button class="tool-pill" style="border-color:#fb7185;color:#fda4af;" onclick="openKitchenModal()">⚙️ Setup</button>
+    </div>
+
     <div class="chat-container" id="chatContainer">
       <div class="welcome" id="welcomeScreen">
         <img src="/icon.svg?v=5" alt="SR" onclick="secretLogoTap()" style="width:72px;height:72px;border-radius:18px;margin:0 auto 12px;display:block;box-shadow:0 8px 24px rgba(16,185,129,.3);" />
@@ -367,6 +378,7 @@
       </div>
 
       <div id="kboxSetup">
+        <div class="form-group"><label>👥 Ghar mein Regular Kitne Log Hain?</label><input type="number" id="kitMembers" min="1" max="50" value="4" /></div>
         <div class="form-group">
           <label>Ghar ka Khaana (Single-Time Selection)</label>
           <select id="kitDiet">
@@ -408,7 +420,8 @@
           <button class="btn-primary" onclick="addGroceryItem()">+ Add</button>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <button class="btn-secondary" style="flex:1;font-size:12px;" onclick="askSweetyGrocery()">✨ AI se Weekly List Banao</button>
+          <button class="btn-secondary" style="flex:1;font-size:12px;" onclick="askSweetySabzi()">🥬 Season Sabzi List</button>
+          <button class="btn-secondary" style="flex:1;font-size:12px;" onclick="askSweetyGrocery()">✨ Weekly Grocery</button>
           <button class="btn-secondary" style="font-size:12px;" onclick="clearDoneGrocery()">🧹 Clear Done</button>
         </div>
         <div id="kitGrocList" style="max-height:220px;overflow-y:auto;"></div>
@@ -521,6 +534,7 @@
       const p = document.getElementById("personaSelect").value;
       document.body.dataset.theme = p;
       document.getElementById("eduBar").style.display = (p === "ansh") ? "flex" : "none";
+      document.getElementById("sweetyBar").style.display = (p === "sweety") ? "flex" : "none";
       const info = PERSONA_INFO[p] || PERSONA_INFO.shehja;
       document.getElementById("welcomeTitle").textContent = info.title;
       document.getElementById("welcomeDesc").textContent = info.desc;
@@ -864,6 +878,9 @@
     }
     function renderKitchenUI() {
       document.getElementById("kitDiet").value = kitchenProfile.diet || "Pure Veg";
+      document.getElementById("kitMembers").value = kitchenProfile.members || 4;
+      document.getElementById("sweetyMembers").value = kitchenProfile.members || 4;
+      document.getElementById("sweetyOccasion").value = kitchenProfile.occasion || "Regular Family";
       document.getElementById("kitLikes").value = kitchenProfile.likes || "";
       document.getElementById("kitHealth").value = kitchenProfile.health || "";
       const apps = new Set(kitchenProfile.appliances || []);
@@ -894,6 +911,8 @@
     }
     async function saveKitchenUI() {
       kitchenProfile.diet = document.getElementById("kitDiet").value;
+      kitchenProfile.members = Math.max(1, parseInt(document.getElementById("kitMembers").value || "4", 10));
+      document.getElementById("sweetyMembers").value = kitchenProfile.members;
       kitchenProfile.likes = document.getElementById("kitLikes").value.trim();
       kitchenProfile.health = document.getElementById("kitHealth").value.trim();
       kitchenProfile.appliances = Array.from(document.querySelectorAll("#kitAppGrid input:checked")).map(c => c.value);
@@ -917,6 +936,25 @@
     async function clearDoneGrocery() {
       kitchenProfile.grocery = (kitchenProfile.grocery || []).filter(g => !g.done);
       await persistKitchen(); renderKitchenUI();
+    }
+    function syncSweetyQuick() {
+      const m = Math.max(1, parseInt(document.getElementById("sweetyMembers").value || "4", 10));
+      const occ = document.getElementById("sweetyOccasion").value;
+      kitchenProfile.members = m;
+      kitchenProfile.occasion = occ;
+      if (occ.startsWith("Single")) {
+        kitchenProfile.members = 1;
+        document.getElementById("sweetyMembers").value = 1;
+      }
+      persistKitchen();
+    }
+    function askSweetySabzi() {
+      closeModal("kitchenModal");
+      document.getElementById("personaSelect").value = "sweety"; onPersonaChange();
+      syncSweetyQuick();
+      const m = kitchenProfile.members || 4, occ = kitchenProfile.occasion || "Regular Family";
+      promptInput.value = "Sweety, abhi ke season ke hisaab se " + m + " logon (" + occ + ") ke liye kaunsi fresh sabziyan leni chahiye, kitne gram/kg leni chahiye, aur kya avoid karna chahiye? Poori person-wise Sabji List bana kar [GROCERY] list mein bhi save kar do.";
+      sendMessage();
     }
     function askSweetyGrocery() {
       closeModal("kitchenModal");

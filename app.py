@@ -121,9 +121,20 @@ def init_db():
         db_exec("INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING", (k, v))
 
 
+def get_indian_season():
+    m = time.gmtime(time.time() + 19800).tm_mon
+    if m in (11, 12, 1, 2):
+        return "Sardi (Winter) — Fresh & Best: Methi, Palak, Sarson, Bathua, Matar, Gajar, Gobhi, Mooli, Chukandar, Hare Pyaz, Amla, Tamatar, Aloo"
+    if m in (3, 4, 5, 6):
+        return "Garmi (Summer) — Fresh & Best: Bhindi, Lauki, Tori (Turai), Karela, Tinda, Parwal, Kheera, Kachcha Aam, Pudina, Neembu"
+    return "Barish (Monsoon) — Best: Bhindi, Tori, Karela, Arbi, Bhutta (Corn), Kundru, Lauki (Avoid/Careful with leafy greens like Palak & Patta Gobhi)"
+
+
 def default_kitchen():
     return {
         "diet": "Pure Veg",
+        "members": 4,
+        "occasion": "Regular Family",
         "appliances": ["Gas Chulha", "Pressure Cooker", "Mixer / Grinder"],
         "likes": "",
         "health": "",
@@ -891,6 +902,13 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 tone = d.get("tone", "auto")
                 u = self.get_session_user()
                 kitchen_ctx = get_kitchen_profile(u["id"]) if (u and persona == "sweety") else (d.get("kitchen") if persona == "sweety" else None)
+                if kitchen_ctx is not None:
+                    if isinstance(d.get("kitchen"), dict):
+                        if d["kitchen"].get("members"):
+                            kitchen_ctx["members"] = d["kitchen"]["members"]
+                        if d["kitchen"].get("occasion"):
+                            kitchen_ctx["occasion"] = d["kitchen"]["occasion"]
+                    kitchen_ctx["season"] = get_indian_season()
                 sys_txt = build_system_prompt(persona, d.get("edu"), bool(d.get("group_mode")), cfg["custom_prompt"], kitchen_ctx=kitchen_ctx)
                 if live_mode:
                     sys_txt += "\n\nLIVE TALK SYNC RULE: Keep reply warm, natural, and crisp (2-4 sentences). At the VERY END, add [SPOKEN]your exact reply converted to smooth spoken Devanagari Hindi with soft commas and '।' (no '...', no emojis)[/SPOKEN] so voice plays instantly."
