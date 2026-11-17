@@ -474,10 +474,14 @@
     }
     async function doLogin() {
       const err = document.getElementById("loginErr"); err.style.display = "none";
-      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("loginEmail").value.trim(), password: document.getElementById("loginPass").value }) });
-      const d = await res.json();
-      if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
-      isGuest = false; await initSession();
+      try {
+        const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("loginEmail").value.trim(), password: document.getElementById("loginPass").value }) });
+        const d = await res.json();
+        if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+        isGuest = false; await initSession();
+      } catch (e) {
+        err.textContent = "⚠️ Network error — dubara tap karein."; err.style.display = "block";
+      }
     }
     async function doSignup() {
       const err = document.getElementById("regErr"); err.style.display = "none";
@@ -793,10 +797,7 @@
         const k = d.kundli;
         const meta = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">🪔 ' + escapeHtml(k.name) + ' ki Janam Kundli</h3>' + d.svg + '<p style="font-size:13px;line-height:1.6;"><b>Lagna:</b> ' + escapeHtml(k.lagna) + ' | <b>Chandra Rashi:</b> ' + escapeHtml(k.moon_rashi) + '<br><b>Nakshatra:</b> ' + escapeHtml(k.nakshatra) + ' (Akshar: ' + escapeHtml(k.nak_akshar) + ')<br><b>Tithi:</b> ' + escapeHtml(k.tithi) + ' | <b>Dasha:</b> ' + escapeHtml(k.cur_dasha) + '<br><b>Manglik:</b> ' + escapeHtml(k.manglik) + ' | <b>Shani:</b> ' + escapeHtml(k.sade_sati) + '<br><b>Mulank:</b> ' + k.mulank + ' | <b>Bhagyank:</b> ' + k.bhagyank + ' | <b>Naam Ank:</b> ' + k.naam_ank + '</p></div>';
         bubble.innerHTML = meta + formatMarkdown(d.reading);
-        addActionButtons(col, "Janam Kundli: " + k.name + "
-Lagna: " + k.lagna + " | Rashi: " + k.moon_rashi + " | Nakshatra: " + k.nakshatra + "
-
-" + d.reading);
+        addActionButtons(col, "Janam Kundli: " + k.name + "\nLagna: " + k.lagna + " | Rashi: " + k.moon_rashi + " | Nakshatra: " + k.nakshatra + "\n\n" + d.reading);
         scrollToBottom();
       } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
       finally { btn.disabled = false; btn.textContent = "📜 Janam Kundli Banao"; }
@@ -821,9 +822,7 @@ Lagna: " + k.lagna + " | Rashi: " + k.moon_rashi + " | Nakshatra: " + k.nakshatr
         const gm = d.milan;
         const box = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">💑 36-Gun Milan Score: ' + gm.total + ' / 36</h3><p style="font-size:13px;">' + escapeHtml(d.k1.name) + ' (' + escapeHtml(d.k1.moon_rashi) + ') & ' + escapeHtml(d.k2.name) + ' (' + escapeHtml(d.k2.moon_rashi) + ')</p></div>';
         bubble.innerHTML = box + formatMarkdown(d.reading);
-        addActionButtons(col, "Kundli Milan (" + gm.total + "/36)
-
-" + d.reading);
+        addActionButtons(col, "Kundli Milan (" + gm.total + "/36)\n\n" + d.reading);
         scrollToBottom();
       } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
       finally { btn.disabled = false; btn.textContent = "💑 36-Gun Milan Dekhein"; }
