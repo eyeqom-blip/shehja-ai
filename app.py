@@ -20,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from exporters import ICON_SVG, LAYOUTS, build_pptx_bytes, build_xlsx_bytes, make_sr_png
 from personas import build_system_prompt, detect_tts_config
+from vedic import compute_gun_milan, compute_kundli, get_today_panchang, render_kundli_svg
 
 try:
     import edge_tts
@@ -243,14 +244,14 @@ def synth_sarvam_audio(text, persona_key, tone="auto", spoken_override=None):
         sp3 = tone
     elif persona_key == "shehja":
         sp3 = "simran" if is_emotional else ("kavya" if is_happy else "priya")
-    elif persona_key == "vadil":
+    elif persona_key in ("vadil", "shastri"):
         sp3 = "ashutosh"
     elif persona_key == "rayan":
         sp3 = "kabir"
     else:
         sp3 = "shubh"
 
-    if tone in ("soft", "calm", "simran") or is_emotional or persona_key == "vadil":
+    if tone in ("soft", "calm", "simran") or is_emotional or persona_key in ("vadil", "shastri"):
         pace, temp = 0.90, 0.62
     elif tone in ("energy", "kavya") or is_happy:
         pace, temp = 1.01, 0.72
@@ -495,6 +496,8 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 return
             rows = db_exec("SELECT role, content FROM user_messages WHERE chat_id = ? ORDER BY seq ASC", (cid,), fetch="all") or []
             self.send_json(200, [{"role": r[0], "content": r[1]} for r in rows])
+        elif path == "/api/panchang":
+            self.send_json(200, get_today_panchang())
         elif path == "/api/settings":
             cfg = get_config()
             self.send_json(200, {"provider": cfg["provider"], "model": cfg["model"], "has_key": bool(cfg["api_key"]), "custom_prompt": cfg["custom_prompt"]})
@@ -627,6 +630,63 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             db_exec("UPDATE users SET pass_hash = ? WHERE email = ?", (hash_secret(pw), email))
             db_exec("DELETE FROM otps WHERE email = ?", (email,))
             self.send_json(200, {"ok": True})
+            return
+
+        if path == "/api/kundli":
+            try:
+                d = self.read_json()
+                k = compute_kundli(
+                    d.get("dob", "2000-01-01"), d.get("tob", "12:00"),
+                    d.get("city", "Ahmedabad"), d.get("name", ""),
+                    d.get("mother_name", ""), d.get("dharma", "Sanatan / Hindu"),
+                )
+                svg = render_kundli_svg(k)
+                cfg = get_config()
+                if cfg["provider"] == "demo":
+                    reading = f"Pranam {k['name']}! Aapka Lagna **{k['lagna']}**, Chandra Rashi **{k['moon_rashi']}**, aur Nakshatra **{k['nakshatra']}** hai. Mulank **{k['mulank']}** aur Bhagyank **{k['bhagyank']}** hai. *(Demo Mode — API key lagane par poori Kundli faladesh aayegi!)*"
+                else:
+                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
+                    q_txt = (
+                        f"Jatak Details (Exact Calculated Vedic Chart):\n"
+                        f"- Naam: {k['name']} (Naam Ank: {k['naam_ank']}), Maa ka Naam: {k['mother_name'] or 'N/A'} (Matri Ank: {k['matri_ank']})\n"
+                        f"- Dharma/Parampara: {k['dharma']}\n"
+                        f"- Birth: {k['dob']} at {k['tob']} in {k['city']} ({k['vaar']})\n"
+                        f"- Tithi: {k['tithi']}, Lagna: {k['lagna']}, Chandra Rashi: {k['moon_rashi']}, Surya Rashi: {k['sun_rashi']}\n"
+                        f"- Nakshatra: {k['nakshatra']} (Naam Akshar: {k['nak_akshar']}, Lord: {k['nak_lord']})\n"
+                        f"- Current Dasha: {k['cur_dasha']}, Manglik: {k['manglik']}, Shani: {k['sade_sati']}\n"
+                        f"- Mulank: {k['mulank']}, Bhagyank: {k['bhagyank']}\n"
+                        f"- Planet Houses: {json.dumps(k['planets'])}\n\n"
+                        f"Shastri Ji, upar diye exact grah-nakshatra ke aadhar par {k['dharma']} parampara ke anusaar "
+                        "Jatak ki **poori Janam Kundli Faladesh** (Swabhav & Personality, Career & Finance, Education, Marriage & Family, Health, aur Positive Upay/Mantra/Daan/Lucky Color) warm Hinglish mein vistaar se batayein."
+                    )
+                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
+                self.send_json(200, {"kundli": k, "svg": svg, "reading": reading})
+            except Exception as e:
+                self.send_json(500, {"error": str(e)})
+            return
+
+        if path == "/api/milan":
+            try:
+                d = self.read_json()
+                k1 = compute_kundli(d.get("dob1", "2000-01-01"), d.get("tob1", "12:00"), d.get("city1", "Ahmedabad"), d.get("name1", "Var"))
+                k2 = compute_kundli(d.get("dob2", "2001-01-01"), d.get("tob2", "12:00"), d.get("city2", "Ahmedabad"), d.get("name2", "Vadhu"))
+                gm = compute_gun_milan(k1, k2)
+                cfg = get_config()
+                if cfg["provider"] == "demo":
+                    reading = f"Gun Milan Score: **{gm['total']} / 36**. *(Demo Mode)*"
+                else:
+                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
+                    q_txt = (
+                        f"Kundli Milan Report:\n"
+                        f"- {k1['name']}: Rashi {k1['moon_rashi']}, Nakshatra {k1['nakshatra']}, Manglik: {k1['manglik']}\n"
+                        f"- {k2['name']}: Rashi {k2['moon_rashi']}, Nakshatra {k2['nakshatra']}, Manglik: {k2['manglik']}\n"
+                        f"- Ashtakoot Gun Score: {gm['total']} / 36 (Varna {gm['varna']}, Vashya {gm['vashya']}, Tara {gm['tara']}, Yoni {gm['yoni']}, Maitri {gm['maitri']}, Gana {gm['gana']}, Bhakoot {gm['bhakoot']}, Nadi {gm['nadi']})\n\n"
+                        "Shastri Ji, is 36-Gun Milan aur Manglik stithi ka santulit aur sakaratmak vishleshan Hinglish mein karein."
+                    )
+                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
+                self.send_json(200, {"milan": gm, "k1": k1, "k2": k2, "reading": reading})
+            except Exception as e:
+                self.send_json(500, {"error": str(e)})
             return
 
         if path == "/api/settings":

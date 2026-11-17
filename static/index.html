@@ -14,6 +14,7 @@
     body[data-theme="armaan"]{--ac:#06b6d4;--ac2:#6366f1}
     body[data-theme="rayan"]{--ac:#8b5cf6;--ac2:#f59e0b}
     body[data-theme="vadil"]{--ac:#d97706;--ac2:#10a37f}
+    body[data-theme="shastri"]{--ac:#ea580c;--ac2:#f59e0b}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);height:100dvh;display:flex;overflow:hidden;transition:background .3s}
     .auth-gate{position:fixed;inset:0;background:radial-gradient(circle at top,#0f2d27,#0b0d12 70%);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
@@ -210,6 +211,7 @@
           <option value="armaan">💻 Armaan (Coder)</option>
           <option value="rayan">🌟 Rayan (All-Rounder)</option>
           <option value="vadil">🤍 Vadil (Safe Space)</option>
+          <option value="shastri">🪔 Shastri Ji (Pandit)</option>
         </select>
       </div>
       <div class="topbar-right">
@@ -245,6 +247,7 @@
     <div class="input-area">
       <div class="live-banner" id="liveBanner"><span id="liveStatus">🎙️ Sun rahi hoon... (Boliye)</span><div style="display:flex;gap:6px;"><button onclick="interruptAndListen()">🎙️ Abhi Bolo</button><button onclick="toggleLiveTalk()">⏹️ Band</button></div></div>
       <div class="toolbar-row">
+        <button class="tool-pill" style="border-color:#f59e0b;color:#fcd34d;" onclick="openKundliModal()">🪔 Kundli</button>
         <button class="tool-pill" onclick="openPptModal()">📊 PPT</button>
         <button class="tool-pill" onclick="openXlsxModal()">📗 Excel</button>
         <button class="tool-pill" onclick="openStudioModal()">🎨 Studio</button>
@@ -304,6 +307,44 @@
       <div class="form-group"><label>Kitne Minute Padhna Hai?</label><select id="focusMins"><option value="15">15 Minutes (Quick Sprint)</option><option value="25" selected>25 Minutes (Pomodoro)</option><option value="45">45 Minutes (Deep Study)</option><option value="60">60 Minutes (Exam Prep)</option></select></div>
       <div id="focusDisplay" style="font-size:34px;font-weight:800;text-align:center;color:#34d399;margin:14px 0;">25:00</div>
       <div class="modal-actions"><button class="btn-secondary" onclick="stopFocus()">Reset</button><button class="btn-secondary" onclick="closeModal('focusModal')">Hide</button><button class="btn-primary" onclick="startFocus()">Start Timer</button></div>
+    </div>
+  </div>
+
+    <div class="modal-backdrop" id="kundliModal">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 style="margin:0;color:#fbbf24;">🪔 Shastri Ji — Jyotish Kendra</h2>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="closeModal('kundliModal')">✕</button>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" id="kTabK" onclick="switchKTab('k')">📜 Kundli</button>
+        <button class="tab-btn" id="kTabM" onclick="switchKTab('m')">💑 Milan</button>
+        <button class="tab-btn" id="kTabP" onclick="switchKTab('p')">📅 Panchang</button>
+      </div>
+      <div id="kBoxK">
+        <div class="form-group"><label>Aapka Naam</label><input type="text" id="kName" placeholder="e.g. Aarav Sharma" /></div>
+        <div class="form-group"><label>Maa ka Naam</label><input type="text" id="kMother" placeholder="e.g. Sunita Devi" /></div>
+        <div class="form-group"><label>Dharma / Parampara / Jaati</label><input type="text" id="kDharma" value="Sanatan / Hindu" placeholder="e.g. Sanatan Brahmin, Patel, Jain, Sikh..." /></div>
+        <div style="display:flex;gap:8px;">
+          <div class="form-group" style="flex:1;"><label>Birth Date</label><input type="date" id="kDob" value="2000-01-15" /></div>
+          <div class="form-group" style="flex:1;"><label>Birth Time</label><input type="time" id="kTob" value="08:30" /></div>
+        </div>
+        <div class="form-group"><label>Birth City / Place</label><input type="text" id="kCity" value="Ahmedabad" placeholder="e.g. Surat, Delhi, Jaipur..." /></div>
+        <div class="error-msg" id="kErr"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn-primary" style="flex:1;" id="kBtn" onclick="generateKundli()">📜 Janam Kundli Banao</button>
+          <button class="btn-secondary" onclick="palmScanPrompt()">🖐️ Haath ki Lakir</button>
+        </div>
+      </div>
+      <div id="kBoxM" style="display:none;">
+        <div class="form-group"><label>Ladke ka Naam & Birth (Date / Time / City)</label><input type="text" id="mName1" placeholder="Naam..." style="margin-bottom:6px;" /><div style="display:flex;gap:5px;"><input type="date" id="mDob1" value="1999-05-10" /><input type="time" id="mTob1" value="10:00" /></div><input type="text" id="mCity1" value="Ahmedabad" placeholder="City..." style="margin-top:6px;" /></div>
+        <div class="form-group"><label>Ladki ka Naam & Birth (Date / Time / City)</label><input type="text" id="mName2" placeholder="Naam..." style="margin-bottom:6px;" /><div style="display:flex;gap:5px;"><input type="date" id="mDob2" value="2001-08-20" /><input type="time" id="mTob2" value="14:15" /></div><input type="text" id="mCity2" value="Surat" placeholder="City..." style="margin-top:6px;" /></div>
+        <div class="error-msg" id="mErr"></div>
+        <button class="btn-primary" style="width:100%;" id="mBtn" onclick="generateMilan()">💑 36-Gun Milan Dekhein</button>
+      </div>
+      <div id="kBoxP" style="display:none;">
+        <div id="panchangInfo" style="font-size:13.5px;line-height:1.7;background:#101318;padding:12px;border-radius:10px;border:1px solid #334155;">⏳ Panchang load ho raha hai...</div>
+      </div>
     </div>
   </div>
 
@@ -379,7 +420,8 @@
       ansh: { title: "Main Ansh hoon — Aapka Tutor 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — koi bhi doubt poochein, main blackboard ke saath step-by-step samjhaunga!" },
       armaan: { title: "Armaan here — Pro Coder 💻", desc: "Python, Web, Apps ya Debugging — apna code ya error bhejo, saath milkar clean solution banate hain." },
       rayan: { title: "Main Rayan hoon — All-Rounder 🌟", desc: "Deep analysis, research, strategy ya group brainstorming — kisi bhi topic par gehrai se kaam karte hain." },
-      vadil: { title: "Aao beta, main hoon na 🤍", desc: "Mann bhaari ho, akelapan lage ya koi tension ho — bina kisi jhijhak ke dil ki baat kaho, main sun raha hoon." }
+      vadil: { title: "Aao beta, main hoon na 🤍", desc: "Mann bhaari ho, akelapan lage ya koi tension ho — bina kisi jhijhak ke dil ki baat kaho, main sun raha hoon." },
+      shastri: { title: "Pranam! Main Shastri Ji hoon 🪔", desc: "Janam Kundli, Naam/Maa ke naam se Ank-Jyotish, 36-Gun Milan, Panchang ya Haath ki Lakir (Hastrekha) — neeche 🪔 Kundli ya 📷 Photo se poochein!" }
     };
 
     const promptInput = document.getElementById("promptInput"), sendBtn = document.getElementById("sendBtn");
@@ -706,6 +748,85 @@
         if (isLiveTalk) { setLiveStatus("⚠️ Network slow — dubara sun rahi hoon..."); setTimeout(startLiveListening, 1500); }
       }
       finally { isGenerating = false; sendBtn.disabled = false; scrollToBottom(); }
+    }
+
+    // Shastri Ji Kundli / Milan / Panchang Functions
+    function openKundliModal() { switchKTab("k"); document.getElementById("kundliModal").classList.add("open"); }
+    function switchKTab(tp) {
+      ["k","m","p"].forEach(x => {
+        document.getElementById("kTab" + x.toUpperCase()).classList.toggle("active", x === tp);
+        document.getElementById("kBox" + x.toUpperCase()).style.display = (x === tp) ? "block" : "none";
+      });
+      if (tp === "p") loadPanchang();
+    }
+    async function loadPanchang() {
+      const box = document.getElementById("panchangInfo");
+      try {
+        const d = await (await fetch("/api/panchang")).json();
+        box.innerHTML = "<strong>📅 Aaj ka Panchang (" + escapeHtml(d.date) + ")</strong><br>🌞 Vaar: " + escapeHtml(d.vaar) + "<br>🌙 Tithi: " + escapeHtml(d.tithi) + "<br>⭐ Nakshatra: " + escapeHtml(d.nakshatra) + "<br>♈ Chandra Rashi: " + escapeHtml(d.moon_rashi) + "<br>✨ Abhijit Muhurat: <span style='color:#34d399'>" + escapeHtml(d.abhijit) + "</span><br>⚠️ Rahu Kaal: <span style='color:#fca5a5'>" + escapeHtml(d.rahu_kaal) + "</span>";
+      } catch (e) { box.textContent = "Panchang load nahi ho paya."; }
+    }
+    function palmScanPrompt() {
+      closeModal("kundliModal");
+      document.getElementById("personaSelect").value = "shastri"; onPersonaChange();
+      promptInput.value = "Shastri Ji, mere haath ki lakir (Jeevan, Hriday, Mastishk aur Bhagya rekha) dekh kar poori Hastrekha faladesh batayein.";
+      document.getElementById("camInput").click();
+    }
+    async function generateKundli() {
+      const err = document.getElementById("kErr"); err.style.display = "none";
+      const btn = document.getElementById("kBtn"); btn.disabled = true; btn.textContent = "⏳ Kundli ban rahi hai...";
+      try {
+        const res = await fetch("/api/kundli", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("kName").value.trim(), mother_name: document.getElementById("kMother").value.trim(),
+            dharma: document.getElementById("kDharma").value.trim(), dob: document.getElementById("kDob").value,
+            tob: document.getElementById("kTob").value, city: document.getElementById("kCity").value.trim()
+          })
+        });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("kundliModal");
+        document.getElementById("personaSelect").value = "shastri"; onPersonaChange();
+        welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        appendMessageDOM("user", "🪔 Janam Kundli: " + d.kundli.name + " (" + d.kundli.dob + " " + d.kundli.tob + ", " + d.kundli.city + ")");
+        const { bubble, col } = appendMessageDOM("assistant", "");
+        const k = d.kundli;
+        const meta = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">🪔 ' + escapeHtml(k.name) + ' ki Janam Kundli</h3>' + d.svg + '<p style="font-size:13px;line-height:1.6;"><b>Lagna:</b> ' + escapeHtml(k.lagna) + ' | <b>Chandra Rashi:</b> ' + escapeHtml(k.moon_rashi) + '<br><b>Nakshatra:</b> ' + escapeHtml(k.nakshatra) + ' (Akshar: ' + escapeHtml(k.nak_akshar) + ')<br><b>Tithi:</b> ' + escapeHtml(k.tithi) + ' | <b>Dasha:</b> ' + escapeHtml(k.cur_dasha) + '<br><b>Manglik:</b> ' + escapeHtml(k.manglik) + ' | <b>Shani:</b> ' + escapeHtml(k.sade_sati) + '<br><b>Mulank:</b> ' + k.mulank + ' | <b>Bhagyank:</b> ' + k.bhagyank + ' | <b>Naam Ank:</b> ' + k.naam_ank + '</p></div>';
+        bubble.innerHTML = meta + formatMarkdown(d.reading);
+        addActionButtons(col, "Janam Kundli: " + k.name + "
+Lagna: " + k.lagna + " | Rashi: " + k.moon_rashi + " | Nakshatra: " + k.nakshatra + "
+
+" + d.reading);
+        scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "📜 Janam Kundli Banao"; }
+    }
+    async function generateMilan() {
+      const err = document.getElementById("mErr"); err.style.display = "none";
+      const btn = document.getElementById("mBtn"); btn.disabled = true; btn.textContent = "⏳ Gun Milan ho raha hai...";
+      try {
+        const res = await fetch("/api/milan", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name1: document.getElementById("mName1").value.trim(), dob1: document.getElementById("mDob1").value, tob1: document.getElementById("mTob1").value, city1: document.getElementById("mCity1").value.trim(),
+            name2: document.getElementById("mName2").value.trim(), dob2: document.getElementById("mDob2").value, tob2: document.getElementById("mTob2").value, city2: document.getElementById("mCity2").value.trim()
+          })
+        });
+        const d = await res.json(); if (!res.ok) throw new Error(d.error);
+        closeModal("kundliModal");
+        document.getElementById("personaSelect").value = "shastri"; onPersonaChange();
+        welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
+        appendMessageDOM("user", "💑 Kundli Milan: " + d.k1.name + " & " + d.k2.name);
+        const { bubble, col } = appendMessageDOM("assistant", "");
+        const gm = d.milan;
+        const box = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">💑 36-Gun Milan Score: ' + gm.total + ' / 36</h3><p style="font-size:13px;">' + escapeHtml(d.k1.name) + ' (' + escapeHtml(d.k1.moon_rashi) + ') & ' + escapeHtml(d.k2.name) + ' (' + escapeHtml(d.k2.moon_rashi) + ')</p></div>';
+        bubble.innerHTML = box + formatMarkdown(d.reading);
+        addActionButtons(col, "Kundli Milan (" + gm.total + "/36)
+
+" + d.reading);
+        scrollToBottom();
+      } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
+      finally { btn.disabled = false; btn.textContent = "💑 36-Gun Milan Dekhein"; }
     }
 
     function openPptModal() { document.getElementById("pptError").style.display = "none"; document.getElementById("pptModal").classList.add("open"); }
