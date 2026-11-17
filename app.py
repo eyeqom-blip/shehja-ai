@@ -106,6 +106,7 @@ def init_db():
         "CREATE TABLE IF NOT EXISTS otps (email TEXT PRIMARY KEY, otp_hash TEXT NOT NULL, expires_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS user_chats (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL, updated_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS user_messages (id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, seq INTEGER NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL, created_at BIGINT NOT NULL)",
+        "CREATE TABLE IF NOT EXISTS kitchen_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, updated_at BIGINT NOT NULL)",
     ]
     for s in stmts:
         db_exec(s)
@@ -118,6 +119,42 @@ def init_db():
     }
     for k, v in defaults.items():
         db_exec("INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING", (k, v))
+
+
+def default_kitchen():
+    return {
+        "diet": "Pure Veg",
+        "appliances": ["Gas Chulha", "Pressure Cooker", "Mixer / Grinder"],
+        "likes": "",
+        "health": "",
+        "history": [],
+        "grocery": [],
+    }
+
+
+def get_kitchen_profile(user_id):
+    if not user_id:
+        return default_kitchen()
+    row = db_exec("SELECT profile_json FROM kitchen_profiles WHERE user_id = ?", (user_id,), fetch="one")
+    if not row:
+        return default_kitchen()
+    try:
+        d = json.loads(row[0])
+        base = default_kitchen()
+        base.update(d)
+        return base
+    except Exception:
+        return default_kitchen()
+
+
+def save_kitchen_profile(user_id, prof):
+    if not user_id:
+        return
+    db_exec(
+        "INSERT INTO kitchen_profiles (user_id, profile_json, updated_at) VALUES (?, ?, ?) "
+        "ON CONFLICT (user_id) DO UPDATE SET profile_json = EXCLUDED.profile_json, updated_at = EXCLUDED.updated_at",
+        (user_id, json.dumps(prof), int(time.time())),
+    )
 
 
 def get_config():
@@ -264,6 +301,8 @@ def synth_sarvam_audio(text, persona_key, tone="auto", spoken_override=None):
     else:
         sp3 = "shubh"
 
+    if persona_key == "sweety" and tone == "auto":
+        sp3 = "priya"
     if tone in ("soft", "calm", "simran") or is_emotional or persona_key in ("vadil", "shastri"):
         pace, temp = 0.90, 0.62
     elif tone in ("energy", "kavya") or is_happy:
@@ -527,6 +566,9 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             msgs = db_exec("SELECT id, chat_id, seq, role, content, created_at FROM user_messages", fetch="all") or []
             bk = json.dumps({"users": users, "chats": chats, "messages": msgs}, default=str).encode("utf-8")
             self.send_bytes(200, "application/json", bk, {"Content-Disposition": 'attachment; filename="shehja_backup.json"'})
+        elif path == "/api/kitchen":
+            u = self.get_session_user()
+            self.send_json(200, get_kitchen_profile(u["id"] if u else None))
         elif path == "/api/panchang":
             self.send_json(200, get_today_panchang())
         elif path == "/api/settings":
@@ -847,7 +889,9 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 persona = d.get("persona", "shehja")
                 live_mode = bool(d.get("live_mode", False))
                 tone = d.get("tone", "auto")
-                sys_txt = build_system_prompt(persona, d.get("edu"), bool(d.get("group_mode")), cfg["custom_prompt"])
+                u = self.get_session_user()
+                kitchen_ctx = get_kitchen_profile(u["id"]) if (u and persona == "sweety") else (d.get("kitchen") if persona == "sweety" else None)
+                sys_txt = build_system_prompt(persona, d.get("edu"), bool(d.get("group_mode")), cfg["custom_prompt"], kitchen_ctx=kitchen_ctx)
                 if live_mode:
                     sys_txt += "\n\nLIVE TALK SYNC RULE: Keep reply warm, natural, and crisp (2-4 sentences). At the VERY END, add [SPOKEN]your exact reply converted to smooth spoken Devanagari Hindi with soft commas and '।' (no '...', no emojis)[/SPOKEN] so voice plays instantly."
                 last_txt = history[-1].get("content", "")
@@ -864,7 +908,31 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     spoken_txt = m_sp.group(1).strip()
                     reply = re.sub(r"\s*\[SPOKEN\][\s\S]*?\[/SPOKEN\]", "", reply).strip()
 
-                u = self.get_session_user()
+                kitchen_updates = {}
+                if persona == "sweety":
+                    m_ck = re.search(r"\[COOKED\]([\s\S]*?)\[/COOKED\]", reply)
+                    if m_ck:
+                        dish = m_ck.group(1).strip()
+                        reply = re.sub(r"\s*\[COOKED\][\s\S]*?\[/COOKED\]", "", reply).strip()
+                        if dish:
+                            today_s = time.strftime("%d %b")
+                            kitchen_updates["cooked"] = {"date": today_s, "dish": dish}
+                            if u and kitchen_ctx is not None:
+                                kitchen_ctx["history"] = ([{"date": today_s, "dish": dish}] + (kitchen_ctx.get("history") or []))[:30]
+                    m_gr = re.search(r"\[GROCERY\]([\s\S]*?)\[/GROCERY\]", reply)
+                    if m_gr:
+                        items = [x.strip() for x in re.split(r"[,\n]+", m_gr.group(1)) if x.strip()]
+                        reply = re.sub(r"\s*\[GROCERY\][\s\S]*?\[/GROCERY\]", "", reply).strip()
+                        if items:
+                            kitchen_updates["grocery"] = items
+                            if u and kitchen_ctx is not None:
+                                existing = {g.get("item","").lower() for g in (kitchen_ctx.get("grocery") or [])}
+                                for it in items:
+                                    if it.lower() not in existing:
+                                        kitchen_ctx.setdefault("grocery", []).append({"item": it, "done": False})
+                    if u and kitchen_updates and kitchen_ctx is not None:
+                        save_kitchen_profile(u["id"], kitchen_ctx)
+
                 cid = d.get("chat_id")
                 if u:
                     now = int(time.time())
@@ -891,7 +959,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     except Exception:
                         pass
 
-                self.send_json(200, {"reply": reply, "chat_id": cid, "audio_b64": audio_b64, "audio_mime": audio_mime})
+                self.send_json(200, {"reply": reply, "chat_id": cid, "audio_b64": audio_b64, "audio_mime": audio_mime, "kitchen_updates": kitchen_updates})
             except Exception as e:
                 self.send_json(500, {"error": str(e)})
             return

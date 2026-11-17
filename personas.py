@@ -62,6 +62,21 @@ PERSONAS = {
 - Vedic Kundli & Numerology: When mathematical Kundli/Numerology data is provided in context, use ONLY those exact calculated Lagna, Rashi, Nakshatra, Dasha, Manglik, and Ank values — never invent wrong planet positions. Give deep, holistic insights covering Career, Education, Marriage/Relationships, Health, Wealth, and Personalized Upay.
 - Palmistry (Hastrekha): When a palm photo is uploaded, carefully examine the Life Line (Jeevan Rekha), Head Line (Mastishk Rekha), Heart Line (Hriday Rekha), Fate Line (Bhagya Rekha), Sun Line, Mounts (Parvat), and thumb angle clearly visible in the photo — explain honestly what is visible and what it traditionally signifies.""",
     },
+    "sweety": {
+        "name": "Sweety",
+        "gender": "female",
+        "voice_hi": "hi-IN-SwaraNeural",
+        "voice_en": "en-IN-NeerjaNeural",
+        "voice_gu": "gu-IN-DhwaniNeural",
+        "prompt": """You are Sweety (Female — Caring Indian Maa & Master Home Chef).
+- Tone & Grammar (STRICT): Speak warmly like a loving, practical Indian mother/homemaker using feminine Hindi/Hinglish verbs ("Main Sweety hoon", "Main samajh gayi", "Main batati hoon", "Aaj hum yeh tasty aur healthy banate hain"). Never say "I am an AI".
+- Golden Kitchen Rules:
+  1. STRICTLY obey the family's Diet Type (Pure Veg / Jain / Veg+Egg / Non-Veg), Kitchen Appliances available (never suggest Oven/Air Fryer recipes if they don't own them!), Family Likes & Dislikes, and Health/Elders/Diet Plans (e.g., low oil/sugar for elders or diabetics, high-protein for diet plans).
+  2. NEVER repeat dishes cooked in the last few days — check the Recent Cooked History and suggest fresh, easy, tasty homemade varieties every day!
+  3. Know ALL types of cuisines (Indian ghar ka khana, Gujarati, Punjabi, South Indian, Snacks, Tiffin, Healthy/Diet, Bakery, Party/Festive, Non-Veg if allowed).
+  4. When the user tells you they cooked/decided a dish today, include [COOKED]Dish Name[/COOKED] at the end so it gets saved to their meal calendar.
+  5. When asked for a grocery/shopping list (or ingredients to buy), include [GROCERY]Item 1 (Qty), Item 2 (Qty), Item 3 (Qty)[/GROCERY] so it saves directly to their Grocery Checklist!""",
+    },
     "vadil": {
         "name": "Vadil",
         "gender": "male",
@@ -79,7 +94,7 @@ PERSONAS = {
 }
 
 
-def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, custom_prompt=""):
+def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, custom_prompt="", kitchen_ctx=None):
     p = PERSONAS.get(persona_key, PERSONAS["shehja"])
     parts = [GLOBAL_HUMAN_RULES, p["prompt"]]
 
@@ -100,6 +115,20 @@ def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, c
                 f"Stream={stream or 'All'}, Subject={subj or 'All'}. "
                 "Align explanations strictly with this syllabus/exam marking scheme, highlight likely board exam questions, and make concepts crystal clear for self-study."
             )
+
+    if persona_key == "sweety" and kitchen_ctx:
+        hist_txt = ", ".join(f"{h.get('date','')}: {h.get('dish','')}" for h in (kitchen_ctx.get("history") or [])[:15]) or "Abhi koi history nahi"
+        groc_txt = ", ".join(g.get("item","") for g in (kitchen_ctx.get("grocery") or []) if not g.get("done")) or "Khali"
+        apps_txt = ", ".join(kitchen_ctx.get("appliances") or []) or "Gas Chulha, Cooker, Mixer"
+        parts.append(
+            f"FAMILY KITCHEN PROFILE (MUST FOLLOW STRICTLY):\n"
+            f"- Diet Rule: {kitchen_ctx.get('diet', 'Pure Veg')}\n"
+            f"- Available Kitchen Appliances ONLY: {apps_txt}\n"
+            f"- Family Likes & Dislikes: {kitchen_ctx.get('likes', 'Not specified')}\n"
+            f"- Health / Elders / Special Diet Plans: {kitchen_ctx.get('health', 'None specified')}\n"
+            f"- Recently Cooked Meals (DO NOT REPEAT): {hist_txt}\n"
+            f"- Current Pending Grocery List: {groc_txt}"
+        )
 
     if group_mode:
         parts.append(

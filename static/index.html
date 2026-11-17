@@ -15,6 +15,7 @@
     body[data-theme="rayan"]{--ac:#8b5cf6;--ac2:#f59e0b}
     body[data-theme="vadil"]{--ac:#d97706;--ac2:#10a37f}
     body[data-theme="shastri"]{--ac:#ea580c;--ac2:#f59e0b}
+    body[data-theme="sweety"]{--ac:#e11d48;--ac2:#f59e0b}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);height:100dvh;display:flex;overflow:hidden;transition:background .3s}
     .auth-gate{position:fixed;inset:0;background:radial-gradient(circle at top,#0f2d27,#0b0d12 70%);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
@@ -126,6 +127,9 @@
     @keyframes pulseLive{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
     .live-banner{width:100%;max-width:780px;display:none;align-items:center;justify-content:space-between;gap:8px;background:#132a24;border:1px solid #10a37f;border-radius:12px;padding:8px 12px;margin-bottom:8px;font-size:12.5px;color:#a7f3d0}
     .live-banner button{background:#1f2937;color:#fff;border:1px solid #374151;border-radius:8px;padding:4px 9px;font-size:11.5px;cursor:pointer}
+      .app-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:4px}
+    .app-chk{display:flex;align-items:center;gap:6px;font-size:12.5px;background:#101318;padding:6px 8px;border-radius:7px;border:1px solid #2b303c;cursor:pointer}
+    .k-row{display:flex;align-items:center;justify-content:space-between;background:#101318;padding:8px 10px;border-radius:8px;border:1px solid #2b303c;margin-bottom:6px;font-size:13px;gap:8px}
   </style>
 </head>
 <body data-theme="shehja">
@@ -212,6 +216,7 @@
           <option value="rayan">🌟 Rayan (All-Rounder)</option>
           <option value="vadil">🤍 Vadil (Safe Space)</option>
           <option value="shastri">🪔 Shastri Ji (Pandit)</option>
+          <option value="sweety">👩‍🍳 Sweety (Kitchen)</option>
         </select>
       </div>
       <div class="topbar-right">
@@ -248,6 +253,7 @@
       <div class="live-banner" id="liveBanner"><span id="liveStatus">🎙️ Sun rahi hoon... (Boliye)</span><div style="display:flex;gap:6px;"><button onclick="interruptAndListen()">🎙️ Abhi Bolo</button><button onclick="toggleLiveTalk()">⏹️ Band</button></div></div>
       <div class="toolbar-row">
         <button class="tool-pill" style="border-color:#f59e0b;color:#fcd34d;" onclick="openKundliModal()">🪔 Kundli</button>
+        <button class="tool-pill" style="border-color:#fb7185;color:#fda4af;" onclick="openKitchenModal()">👩‍🍳 Kitchen</button>
         <button class="tool-pill" onclick="openPptModal()">📊 PPT</button>
         <button class="tool-pill" onclick="openXlsxModal()">📗 Excel</button>
         <button class="tool-pill" onclick="openStudioModal()">🎨 Studio</button>
@@ -348,6 +354,68 @@
     </div>
   </div>
 
+    <div class="modal-backdrop" id="kitchenModal">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 style="margin:0;color:#fda4af;">👩‍🍳 Sweety — Ghar ka Kitchen</h2>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="closeModal('kitchenModal')">✕</button>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" id="ktabSetup" onclick="switchKitTab('Setup')">⚙️ Ghar Setup</button>
+        <button class="tab-btn" id="ktabHist" onclick="switchKitTab('Hist')">📅 Kya Bana</button>
+        <button class="tab-btn" id="ktabGroc" onclick="switchKitTab('Groc')">🛒 Grocery</button>
+      </div>
+
+      <div id="kboxSetup">
+        <div class="form-group">
+          <label>Ghar ka Khaana (Single-Time Selection)</label>
+          <select id="kitDiet">
+            <option value="Pure Veg">🥬 Pure Veg</option>
+            <option value="Veg + Egg">🥚 Veg + Egg</option>
+            <option value="Non-Veg + Veg">🍗 Non-Veg + Veg</option>
+            <option value="Jain (No Onion/Garlic)">🌿 Jain (Bina Pyaz/Lehsun)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Kitchen Accessories (Jo Ghar mein Hai)</label>
+          <div class="app-grid" id="kitAppGrid">
+            <label class="app-chk"><input type="checkbox" value="Gas Chulha" /> Gas Chulha</label>
+            <label class="app-chk"><input type="checkbox" value="Pressure Cooker" /> Cooker</label>
+            <label class="app-chk"><input type="checkbox" value="Mixer / Grinder" /> Mixer</label>
+            <label class="app-chk"><input type="checkbox" value="Microwave" /> Microwave</label>
+            <label class="app-chk"><input type="checkbox" value="Oven / OTG" /> Oven / OTG</label>
+            <label class="app-chk"><input type="checkbox" value="Air Fryer" /> Air Fryer</label>
+            <label class="app-chk"><input type="checkbox" value="Induction" /> Induction</label>
+            <label class="app-chk"><input type="checkbox" value="Sandwich Maker" /> Grill/Toaster</label>
+          </div>
+        </div>
+        <div class="form-group"><label>Pasand / Na-Pasand (Kisko Kya Pasand/Nahi Pasand)</label><textarea id="kitLikes" rows="2" placeholder="e.g. Papa ko kam mirch aur lauki nahi pasand, bacchon ko paneer/pasta pasand hai..."></textarea></div>
+        <div class="form-group"><label>Special Health / Diet / Elders Care</label><textarea id="kitHealth" rows="2" placeholder="e.g. Dadi ko sugar/diabetes hai (low oil, no sugar), Mummy ka weight-loss diet..."></textarea></div>
+        <button class="btn-primary" style="width:100%;" onclick="saveKitchenUI()">💾 Save Kitchen Profile</button>
+      </div>
+
+      <div id="kboxHist" style="display:none;">
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="text" id="newDishInput" placeholder="Aaj kya bana? (e.g. Dal Makhani)" style="flex:1;padding:8px 10px;background:#101318;border:1px solid #323744;border-radius:8px;color:#fff;" />
+          <button class="btn-primary" onclick="addCookedDish()">+ Add</button>
+        </div>
+        <div id="kitHistList" style="max-height:240px;overflow-y:auto;"></div>
+      </div>
+
+      <div id="kboxGroc" style="display:none;">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <input type="text" id="newGrocInput" placeholder="Samaan likhein (e.g. Paneer 250g)" style="flex:1;padding:8px 10px;background:#101318;border:1px solid #323744;border-radius:8px;color:#fff;" />
+          <button class="btn-primary" onclick="addGroceryItem()">+ Add</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <button class="btn-secondary" style="flex:1;font-size:12px;" onclick="askSweetyGrocery()">✨ AI se Weekly List Banao</button>
+          <button class="btn-secondary" style="font-size:12px;" onclick="clearDoneGrocery()">🧹 Clear Done</button>
+        </div>
+        <div id="kitGrocList" style="max-height:220px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="pptModal">
     <div class="modal">
       <h2>📊 Unique PPT Maker (.pptx)</h2>
@@ -421,7 +489,8 @@
       armaan: { title: "Armaan here — Pro Coder 💻", desc: "Python, Web, Apps ya Debugging — apna code ya error bhejo, saath milkar clean solution banate hain." },
       rayan: { title: "Main Rayan hoon — All-Rounder 🌟", desc: "Deep analysis, research, strategy ya group brainstorming — kisi bhi topic par gehrai se kaam karte hain." },
       vadil: { title: "Aao beta, main hoon na 🤍", desc: "Mann bhaari ho, akelapan lage ya koi tension ho — bina kisi jhijhak ke dil ki baat kaho, main sun raha hoon." },
-      shastri: { title: "Pranam! Main Shastri Ji hoon 🪔", desc: "Janam Kundli, Naam/Maa ke naam se Ank-Jyotish, 36-Gun Milan, Panchang ya Haath ki Lakir (Hastrekha) — neeche 🪔 Kundli ya 📷 Photo se poochein!" }
+      shastri: { title: "Pranam! Main Shastri Ji hoon 🪔", desc: "Janam Kundli, Naam/Maa ke naam se Ank-Jyotish, 36-Gun Milan, Panchang ya Haath ki Lakir (Hastrekha) — neeche 🪔 Kundli ya 📷 Photo se poochein!" },
+      sweety: { title: "Haan beta/ji, main Sweety hoon 👩‍🍳", desc: "Aaj kitchen mein kya naya aur tasty banayein? Pehle 👩‍🍳 Kitchen mein ghar ki pasand, health aur bartan save kar dein — phir main roz nayi recipe aur grocery list sambhal lungi!" }
     };
 
     const promptInput = document.getElementById("promptInput"), sendBtn = document.getElementById("sendBtn");
@@ -527,6 +596,7 @@
         sideB.onclick = () => { if (confirm("Logout karna hai?")) doLogout(); };
         chats = await (await fetch("/api/chats")).json();
         renderChatList();
+        loadKitchen();
         if (me.last_topic) {
           document.getElementById("welcomeDesc").textContent = "Welcome back " + currentUser.name + "! Pichli baar hum '" + me.last_topic + "' par baat kar rahe the — aaj aage badhein?";
         }
@@ -734,7 +804,7 @@
       const hist = chat.messages.slice(-12).map((m, idx, arr) => ({ role: m.role, content: m.content, image: (idx === arr.length - 1) ? (m.image || "") : "", mime: m.mime || "image/jpeg" }));
       const edu = { board: document.getElementById("eduBoard").value, std: document.getElementById("eduStd").value, stream: document.getElementById("eduStream").value, subject: document.getElementById("eduSubject").value.trim(), eduknow: document.getElementById("eduKnowChk").checked };
       try {
-        const payloadStr = JSON.stringify({ chat_id: (currentUser && !isNew) ? currentChatId : null, history: hist, persona: document.getElementById("personaSelect").value, edu, group_mode: isGroupMode, use_search: useLiveSearch, live_mode: isLiveTalk, tone: document.getElementById("voiceTone").value });
+        const payloadStr = JSON.stringify({ chat_id: (currentUser && !isNew) ? currentChatId : null, history: hist, persona: document.getElementById("personaSelect").value, edu, group_mode: isGroupMode, use_search: useLiveSearch, live_mode: isLiveTalk, tone: document.getElementById("voiceTone").value, kitchen: (document.getElementById("personaSelect").value === "sweety") ? kitchenProfile : null });
         let res;
         try {
           res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: payloadStr });
@@ -746,6 +816,19 @@
         if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
         chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();
         aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
+        if (data.kitchen_updates) {
+          if (data.kitchen_updates.cooked) {
+            kitchenProfile.history.unshift(data.kitchen_updates.cooked);
+            kitchenProfile.history = kitchenProfile.history.slice(0, 30);
+          }
+          if (data.kitchen_updates.grocery) {
+            const ex = new Set((kitchenProfile.grocery || []).map(x => x.item.toLowerCase()));
+            data.kitchen_updates.grocery.forEach(it => { if (!ex.has(it.toLowerCase())) kitchenProfile.grocery.push({ item: it, done: false }); });
+          }
+          if (data.kitchen_updates.cooked || data.kitchen_updates.grocery) {
+            try { localStorage.setItem(KIT_KEY, JSON.stringify(kitchenProfile)); } catch (e) {}
+          }
+        }
         if (isLiveTalk) { autoSpeakAndLoop(aiC.querySelector(".speak-btn"), data.reply, data.audio_b64, data.audio_mime); }
       } catch (err) {
         aiB.innerHTML = "<p style='color:#f87171;'>⚠️ " + escapeHtml(err.message) + "</p>";
@@ -755,6 +838,93 @@
     }
 
     // Shastri Ji Kundli / Milan / Panchang Functions
+    // Sweety Kitchen Master State & Functions
+    const KIT_KEY = "shehja_guest_kitchen";
+    let kitchenProfile = { diet: "Pure Veg", appliances: ["Gas Chulha", "Pressure Cooker", "Mixer / Grinder"], likes: "", health: "", history: [], grocery: [] };
+    try { const savedK = localStorage.getItem(KIT_KEY); if (savedK) kitchenProfile = JSON.parse(savedK); } catch (e) {}
+
+    async function loadKitchen() {
+      if (currentUser) {
+        try { kitchenProfile = await (await fetch("/api/kitchen")).json(); } catch (e) {}
+      }
+      renderKitchenUI();
+    }
+    async function persistKitchen() {
+      try { localStorage.setItem(KIT_KEY, JSON.stringify(kitchenProfile)); } catch (e) {}
+      if (currentUser) {
+        await fetch("/api/kitchen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(kitchenProfile) });
+      }
+    }
+    function openKitchenModal() { renderKitchenUI(); switchKitTab("Setup"); document.getElementById("kitchenModal").classList.add("open"); }
+    function switchKitTab(t) {
+      ["Setup","Hist","Groc"].forEach(x => {
+        document.getElementById("ktab" + x).classList.toggle("active", x === t);
+        document.getElementById("kbox" + x).style.display = (x === t) ? "block" : "none";
+      });
+    }
+    function renderKitchenUI() {
+      document.getElementById("kitDiet").value = kitchenProfile.diet || "Pure Veg";
+      document.getElementById("kitLikes").value = kitchenProfile.likes || "";
+      document.getElementById("kitHealth").value = kitchenProfile.health || "";
+      const apps = new Set(kitchenProfile.appliances || []);
+      document.querySelectorAll("#kitAppGrid input[type=checkbox]").forEach(cb => { cb.checked = apps.has(cb.value); });
+
+      const hl = document.getElementById("kitHistList");
+      hl.innerHTML = (kitchenProfile.history || []).length ? "" : "<p style='color:#9aa3b2;font-size:13px;'>Abhi koi cooked history nahi hai.</p>";
+      (kitchenProfile.history || []).forEach((item, idx) => {
+        const d = document.createElement("div"); d.className = "k-row";
+        d.innerHTML = "<span>📅 <b>" + escapeHtml(item.date) + "</b> — " + escapeHtml(item.dish) + "</span>";
+        const b = document.createElement("button"); b.className = "del-btn"; b.textContent = "✕";
+        b.onclick = () => { kitchenProfile.history.splice(idx, 1); persistKitchen(); renderKitchenUI(); };
+        d.appendChild(b); hl.appendChild(d);
+      });
+
+      const gl = document.getElementById("kitGrocList");
+      gl.innerHTML = (kitchenProfile.grocery || []).length ? "" : "<p style='color:#9aa3b2;font-size:13px;'>Grocery list abhi khali hai.</p>";
+      (kitchenProfile.grocery || []).forEach((g, idx) => {
+        const d = document.createElement("div"); d.className = "k-row";
+        const lb = document.createElement("label"); lb.style.cssText = "display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;" + (g.done ? "text-decoration:line-through;opacity:0.55;" : "");
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!g.done;
+        cb.onchange = () => { g.done = cb.checked; persistKitchen(); renderKitchenUI(); };
+        lb.appendChild(cb); lb.appendChild(document.createTextNode(g.item));
+        const b = document.createElement("button"); b.className = "del-btn"; b.textContent = "✕";
+        b.onclick = () => { kitchenProfile.grocery.splice(idx, 1); persistKitchen(); renderKitchenUI(); };
+        d.appendChild(lb); d.appendChild(b); gl.appendChild(d);
+      });
+    }
+    async function saveKitchenUI() {
+      kitchenProfile.diet = document.getElementById("kitDiet").value;
+      kitchenProfile.likes = document.getElementById("kitLikes").value.trim();
+      kitchenProfile.health = document.getElementById("kitHealth").value.trim();
+      kitchenProfile.appliances = Array.from(document.querySelectorAll("#kitAppGrid input:checked")).map(c => c.value);
+      await persistKitchen();
+      document.getElementById("personaSelect").value = "sweety"; onPersonaChange();
+      closeModal("kitchenModal");
+      alert("✅ Ghar ka Kitchen Profile Save ho gaya!");
+    }
+    async function addCookedDish() {
+      const inp = document.getElementById("newDishInput"), val = inp.value.trim(); if (!val) return;
+      const dt = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      kitchenProfile.history.unshift({ date: dt, dish: val });
+      kitchenProfile.history = kitchenProfile.history.slice(0, 30);
+      inp.value = ""; await persistKitchen(); renderKitchenUI();
+    }
+    async function addGroceryItem() {
+      const inp = document.getElementById("newGrocInput"), val = inp.value.trim(); if (!val) return;
+      kitchenProfile.grocery.push({ item: val, done: false });
+      inp.value = ""; await persistKitchen(); renderKitchenUI();
+    }
+    async function clearDoneGrocery() {
+      kitchenProfile.grocery = (kitchenProfile.grocery || []).filter(g => !g.done);
+      await persistKitchen(); renderKitchenUI();
+    }
+    function askSweetyGrocery() {
+      closeModal("kitchenModal");
+      document.getElementById("personaSelect").value = "sweety"; onPersonaChange();
+      promptInput.value = "Sweety, mere ghar ke diet, pasand aur health plans ke hisaab se is week ki practical Grocery List bana kar [GROCERY] list mein save kar do.";
+      sendMessage();
+    }
+
     function openKundliModal() { switchKTab("k"); document.getElementById("kundliModal").classList.add("open"); }
     function switchKTab(tp) {
       ["k","m","p"].forEach(x => {
