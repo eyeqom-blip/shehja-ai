@@ -799,6 +799,7 @@
     }
 
     function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+    function scrollToMsgTop(el) { if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }
     function renderChatList() {
       chatList.innerHTML = "";
       chats.forEach(c => {
@@ -861,6 +862,7 @@
         if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
         chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();
         aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
+        scrollToMsgTop(aiB.closest(".msg-row"));
         if (data.kitchen_updates) {
           if (data.kitchen_updates.cooked) {
             kitchenProfile.history.unshift(data.kitchen_updates.cooked);
@@ -879,7 +881,7 @@
         aiB.innerHTML = "<p style='color:#f87171;'>⚠️ " + escapeHtml(err.message) + "</p>";
         if (isLiveTalk) { setLiveStatus("⚠️ Network slow — dubara sun rahi hoon..."); setTimeout(startLiveListening, 1500); }
       }
-      finally { isGenerating = false; sendBtn.disabled = false; scrollToBottom(); }
+      finally { isGenerating = false; sendBtn.disabled = false; }
     }
 
     // Shastri Ji Kundli / Milan / Panchang Functions
@@ -1025,7 +1027,7 @@
         const { bubble, col } = appendMessageDOM("assistant", "");
         const box = '<div class="export-card" style="border-color:#a855f7;margin-bottom:10px;"><h3 style="color:#d8b4fe;">🔢 ' + escapeHtml(nu.name) + ' — Lo Shu & Ank Jyotish</h3>' + d.svg + '<p style="font-size:13px;line-height:1.6;"><b>Mulank:</b> ' + nu.mulank + ' (' + escapeHtml(nu.ruler) + ') | <b>Bhagyank:</b> ' + nu.bhagyank + ' | <b>Kua:</b> ' + nu.kua + '<br><b>Name Ank:</b> ' + nu.chaldean_raw + ' ➔ ' + nu.naam_ank + ' | <b>Lucky Nos:</b> ' + escapeHtml(nu.lucky_numbers.join(", ")) + '<br><b>Lucky Day:</b> ' + escapeHtml(nu.lucky_day) + ' | <b>Color:</b> ' + escapeHtml(nu.lucky_color) + '<br><b>Rajyogs:</b> ' + escapeHtml(nu.active_planes.join(", ") || "Balanced") + '<br><b>Missing Nos:</b> ' + escapeHtml(nu.missing.join(", ") || "None") + (nu.extra_status ? '<br><b>Mobile/Vehicle:</b> ' + escapeHtml(nu.extra_status) : '') + '</p></div>';
         bubble.innerHTML = box + formatMarkdown(d.reading);
-        addActionButtons(col, "Numerology Report: " + nu.name + "\nMulank: " + nu.mulank + " | Bhagyank: " + nu.bhagyank + "\n\n" + d.reading);
+        scrollToMsgTop(bubble.closest(".msg-row")); addActionButtons(col, "Numerology Report: " + nu.name + "\nMulank: " + nu.mulank + " | Bhagyank: " + nu.bhagyank + "\n\n" + d.reading);
         scrollToBottom();
       } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
       finally { btn.disabled = false; btn.textContent = "🔢 Lo Shu Grid & Numerology Report"; }
@@ -1046,7 +1048,7 @@
         const { bubble, col } = appendMessageDOM("assistant", "");
         const cardsHtml = d.cards.map(c => '<div class="ppt-slide-mini" style="border-color:#f59e0b;"><strong style="color:#fbbf24;">🃏 ' + escapeHtml(c.pos) + ': ' + escapeHtml(c.name) + '</strong><span style="font-size:12.5px;color:#cbd5e1;">' + escapeHtml(c.meaning) + '</span></div>').join("");
         bubble.innerHTML = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">🃏 3-Card Tarot Spread</h3>' + cardsHtml + '</div>' + formatMarkdown(d.reading);
-        addActionButtons(col, "Tarot Reading: " + d.question + "\n\n" + d.reading);
+        scrollToMsgTop(bubble.closest(".msg-row")); addActionButtons(col, "Tarot Reading: " + d.question + "\n\n" + d.reading);
         scrollToBottom();
       } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
       finally { btn.disabled = false; btn.textContent = "🃏 Shuffle & Draw 3 Tarot Cards"; }
@@ -1086,7 +1088,7 @@
         const k = d.kundli;
         const meta = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">🪔 ' + escapeHtml(k.name) + ' ki Janam Kundli</h3>' + d.svg + '<p style="font-size:13px;line-height:1.6;"><b>Lagna:</b> ' + escapeHtml(k.lagna) + ' | <b>Chandra Rashi:</b> ' + escapeHtml(k.moon_rashi) + '<br><b>Nakshatra:</b> ' + escapeHtml(k.nakshatra) + ' (Akshar: ' + escapeHtml(k.nak_akshar) + ')<br><b>Tithi:</b> ' + escapeHtml(k.tithi) + ' | <b>Dasha:</b> ' + escapeHtml(k.cur_dasha) + '<br><b>Manglik:</b> ' + escapeHtml(k.manglik) + ' | <b>Shani:</b> ' + escapeHtml(k.sade_sati) + '<br><b>Mulank:</b> ' + k.mulank + ' | <b>Bhagyank:</b> ' + k.bhagyank + ' | <b>Naam Ank:</b> ' + k.naam_ank + '</p></div>';
         bubble.innerHTML = meta + formatMarkdown(d.reading);
-        addActionButtons(col, "Janam Kundli: " + k.name + "\nLagna: " + k.lagna + " | Rashi: " + k.moon_rashi + " | Nakshatra: " + k.nakshatra + "\n\n" + d.reading);
+        scrollToMsgTop(bubble.closest(".msg-row")); addActionButtons(col, "Janam Kundli: " + k.name + "\nLagna: " + k.lagna + " | Rashi: " + k.moon_rashi + " | Nakshatra: " + k.nakshatra + "\n\n" + d.reading);
         scrollToBottom();
       } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
       finally { btn.disabled = false; btn.textContent = "📜 Janam Kundli Banao"; }
@@ -1111,7 +1113,7 @@
         const gm = d.milan;
         const box = '<div class="export-card" style="border-color:#f59e0b;margin-bottom:10px;"><h3 style="color:#fbbf24;">💑 36-Gun Milan Score: ' + gm.total + ' / 36</h3><p style="font-size:13px;">' + escapeHtml(d.k1.name) + ' (' + escapeHtml(d.k1.moon_rashi) + ') & ' + escapeHtml(d.k2.name) + ' (' + escapeHtml(d.k2.moon_rashi) + ')</p></div>';
         bubble.innerHTML = box + formatMarkdown(d.reading);
-        addActionButtons(col, "Kundli Milan (" + gm.total + "/36)\n\n" + d.reading);
+        scrollToMsgTop(bubble.closest(".msg-row")); addActionButtons(col, "Kundli Milan (" + gm.total + "/36)\n\n" + d.reading);
         scrollToBottom();
       } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
       finally { btn.disabled = false; btn.textContent = "💑 36-Gun Milan Dekhein"; }
