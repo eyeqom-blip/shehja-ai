@@ -172,6 +172,11 @@
             <option value="muslim">☪️ Muslim / Islam (Assalamu Alaikum)</option>
             <option value="sikh">🪯 Sikh (Sat Sri Akal)</option>
             <option value="christian">✝️ Christian (Peace & Blessings)</option>
+                        <option value="jain">🙏 Jain (Jai Jinendra)</option>
+            <option value="maharashtrian">🚩 Maharashtrian (Namaskar)</option>
+            <option value="vaishnav">🦚 Vaishnav (Jai Shri Krishna)</option>
+            <option value="swaminarayan">🙏 Swaminarayan (Jay Swaminarayan)</option>
+            <option value="sindhi">🌊 Sindhi (Jai Jhulelal)</option>
             <option value="universal">🌍 All / Universal</option>
           </select>
         </div>
@@ -203,7 +208,12 @@
           <option value="muslim">☪️ Muslim / Islam</option>
           <option value="sikh">🪯 Sikh</option>
           <option value="christian">✝️ Christian</option>
-          <option value="universal">🌍 Universal</option>
+                      <option value="jain">🙏 Jain (Jai Jinendra)</option>
+            <option value="maharashtrian">🚩 Maharashtrian (Namaskar)</option>
+            <option value="vaishnav">🦚 Vaishnav (Jai Shri Krishna)</option>
+            <option value="swaminarayan">🙏 Swaminarayan (Jay Swaminarayan)</option>
+            <option value="sindhi">🌊 Sindhi (Jai Jhulelal)</option>
+            <option value="universal">🌍 Universal</option>
         </select>
         <button class="guest-btn" style="margin-top:0;flex:1;" onclick="enterGuest()">👤 Guest Mode</button>
       </div>
@@ -224,7 +234,12 @@
         <option value="muslim">☪️ Faith: Muslim / Islam</option>
         <option value="sikh">🪯 Faith: Sikh</option>
         <option value="christian">✝️ Faith: Christian</option>
-        <option value="universal">🌍 Mode: Universal</option>
+                    <option value="jain">🙏 Jain (Jai Jinendra)</option>
+            <option value="maharashtrian">🚩 Maharashtrian (Namaskar)</option>
+            <option value="vaishnav">🦚 Vaishnav (Jai Shri Krishna)</option>
+            <option value="swaminarayan">🙏 Swaminarayan (Jay Swaminarayan)</option>
+            <option value="sindhi">🌊 Sindhi (Jai Jhulelal)</option>
+            <option value="universal">🌍 Mode: Universal</option>
       </select>
       <button class="side-btn" id="installBtn" style="display:none;" onclick="installApp()"><span>📲 Install SR App</span><span class="mode-badge">App</span></button>
       <button class="side-btn" id="authSideBtn" onclick="openAuthGate()"><span>🔐 Sign In / Switch</span><span class="mode-badge">Sync</span></button>
@@ -679,6 +694,61 @@
           shastri: { title: "God bless you! Pastor here ⛪", desc: "Daily prayer, Bible wisdom, or 10% Tithe calculator — tap ⛪ Prayer below!" },
           sweety: { title: "Blessings! I am Maria 🍲", desc: "What delicious homemade meal shall we cook today? Save family choices in 👩‍🍳 Kitchen!" },
           vadil: { title: "I am right here with you 🤍", desc: "Feel free to share anything weighing on your heart — you are heard and cared for." }
+        }
+      },
+      jain: {
+        toolLabel: "🙏 Kundli / Tithi", showNum: true,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Parshva (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🙏 Muni / Guide", sweety: "🥗 Mahima (Jain Kitchen)" },
+        info: {
+          shehja: { title: "Jai Jinendra! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, dil ki baat ya Jain recipes — sab milkar karenge!" },
+          ansh: { title: "Jai Jinendra! Main Parshva hoon 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — blackboard par har doubt clear karunga!" },
+          shastri: { title: "Jai Jinendra! Muni / Guide 🙏", desc: "Panchang, Tithi, Kundli, Ank-Jyotish ya Jain Agam guidance — neeche 🙏 Kundli / Tithi dabayein!" },
+          sweety: { title: "Jai Jinendra! Main Mahima hoon 🥗", desc: "100% Pure Jain Satvik Kitchen (bina pyaz, lehsun, aloo, zameen-kand) — roz nayi healthy recipe banate hain!" },
+          vadil: { title: "Jai Jinendra beta 🤍", desc: "Koi bhi chinta ya akelapan ho — aaram se dil ki baat kaho, main sun raha hoon." }
+        }
+      },
+      maharashtrian: {
+        toolLabel: "🚩 Kundli / Panchang", showNum: true,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Atharva (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Baba (Safe Space)", shastri: "🪔 Guruji (Jyotish)", sweety: "👩‍🍳 Sai / Aai (Kitchen)" },
+        info: {
+          shehja: { title: "Namaskar! Main Shehja 🌸", desc: "Kay mhanta dost? Padhai, coding, ya Marathi/Hinglish baat-cheet — chalo shuru karein!" },
+          ansh: { title: "Namaskar! Main Atharva 📚", desc: "Std 8–12 ya College — blackboard par har subject simple example se samjhaunga!" },
+          shastri: { title: "Ram Krishna Hari! Guruji 🪔", desc: "Janam Kundli, Panchang, Muhurat aur 36-Gun Milan — neeche 🚩 Kundli / Panchang se dekhein!" },
+          sweety: { title: "Namaskar! Main Sai (Aai) 👩‍🍳", desc: "Puran Poli, Misal, Thalipeeth ya daily ghar ka khana — 👩‍🍳 Kitchen mein pasand save karein!" },
+          vadil: { title: "Ye baala, mi aahe na 🤍", desc: "Mann bhaari ho ya tension ho — bina jhijhak dil ki baat kaho." }
+        }
+      },
+      vaishnav: {
+        toolLabel: "🦚 Kundli / Ekadashi", showNum: true,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Madhav (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🦚 Shastri Ji", sweety: "👩‍🍳 Yashoda (Satvik)" },
+        info: {
+          shehja: { title: "Jai Shri Krishna! Main Shehja 🌸", desc: "Kya haal hai dost? Padhai, dil ki baat ya daily kaam — milkar karte hain!" },
+          ansh: { title: "Jai Shri Krishna! Madhav 📚", desc: "CBSE/GSEB ya College EduKnow — blackboard par step-by-step padhayi karenge!" },
+          shastri: { title: "Jai Shri Krishna! Shastri Ji 🦚", desc: "Janam Kundli, Tithi, Ekadashi, Numerology aur Milan — 🦚 Kundli / Ekadashi dabayein!" },
+          sweety: { title: "Jai Shri Krishna! Yashoda 👩‍🍳", desc: "Pure Vaishnav Satvik Kitchen (bina pyaz/lehsun) — roz nayi prasad aur ghar ki recipe!" },
+          vadil: { title: "Jai Shri Krishna beta 🤍", desc: "Koi bhi fikar ya dukh ho — dil halka karne ke liye main hamesha saath hoon." }
+        }
+      },
+      swaminarayan: {
+        toolLabel: "🙏 Kundli / Satsang", showNum: true,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Akshar (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🙏 Shastri Ji", sweety: "👩‍🍳 Bhakti (Satvik)" },
+        info: {
+          shehja: { title: "Jay Swaminarayan! Main Shehja 🌸", desc: "Kem chho dost? Padhai, coding ya rozana ki madad — hamesha taiyaar hoon!" },
+          ansh: { title: "Jay Swaminarayan! Akshar 📚", desc: "GSEB/CBSE Std 8–12 ya College — blackboard par bilkul clear samjhaunga!" },
+          shastri: { title: "Jay Swaminarayan! Shastri Ji 🙏", desc: "Kundli, Ekadashi, Panchang, aur Shikshapatri/Vachanamrut guidance ke liye poochein!" },
+          sweety: { title: "Jay Swaminarayan! Bhakti 👩‍🍳", desc: "100% Pure Swaminarayan Satvik Kitchen (bina pyaz/lehsun) — healthy & tasty ghar ka khana!" },
+          vadil: { title: "Jay Swaminarayan beta 🤍", desc: "Mann shant rakhna aur himmat rakhna — har baat pyaar se share kar sakte ho." }
+        }
+      },
+      sindhi: {
+        toolLabel: "🌊 Kundli / Jyotish", showNum: true,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Vishal (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Dada / Vadil", shastri: "🌊 Shastri Ji", sweety: "👩‍🍳 Geeta (Kitchen)" },
+        info: {
+          shehja: { title: "Jai Jhulelal! Main Shehja 🌸", desc: "Chha haal aa dost? Padhai, business, ya masti — chalo shuru karein!" },
+          ansh: { title: "Jai Jhulelal! Main Vishal 📚", desc: "Std 8–12 ya College — blackboard par har topic asaan bana dunga!" },
+          shastri: { title: "Jhulelal Bera Paar! Shastri Ji 🌊", desc: "Janam Kundli, Ank-Jyotish, Milan aur Tithi Panchang — neeche 🌊 Kundli dabayein!" },
+          sweety: { title: "Jai Jhulelal! Main Geeta 👩‍🍳", desc: "Dal Pakwan, Sai Bhaji, Sindhi Kadhi, Koki ya roz ki sabzi — 👩‍🍳 Kitchen mein setup karein!" },
+          vadil: { title: "Jhulelal Bera Paar puttar 🤍", desc: "Koi bhi pareshani ho, apno ki tarah dil khol kar baat karo." }
         }
       },
       universal: {

@@ -27,6 +27,31 @@ FAITH_PROFILES = {
         "names": {"shehja": "Shehja", "ansh": "Daniel", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Elder", "shastri": "Pastor", "sweety": "Maria"},
         "rule": "User's Faith/Tradition: Christian. Greet warmly with 'Peace and blessings' when starting, respect Christian faith and Biblical wisdom, and respond lovingly.",
     },
+    "jain": {
+        "greeting": "Jai Jinendra",
+        "names": {"shehja": "Shehja", "ansh": "Parshva", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Muni / Guide", "sweety": "Mahima"},
+        "rule": "User's Faith: Jainism. Greet warmly with 'Jai Jinendra'. Respect Ahimsa, Agam values, Tithi/Paryushan/Pachkhan. In Mahima's Kitchen, STRICTLY suggest 100% Pure Jain recipes ONLY — NEVER include onion, garlic, potato, ginger, carrot, radish, beet, or honey!",
+    },
+    "maharashtrian": {
+        "greeting": "Namaskar / Ram Krishna Hari",
+        "names": {"shehja": "Shehja", "ansh": "Atharva", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Baba / Vadil", "shastri": "Guruji", "sweety": "Sai (Aai)"},
+        "rule": "User's Culture/Tradition: Maharashtrian (Marathi). Greet warmly with 'Namaskar' or 'Ram Krishna Hari'. Use affectionate Marathi touches ('Aho', 'Kay mhanta', 'Chhan') naturally. In Sai's Kitchen, include authentic Maharashtrian home dishes (Puran Poli, Pithla-Bhakri, Thalipeeth, Batata Vada, Sabudana Khichdi, Modak) alongside other cuisines.",
+    },
+    "vaishnav": {
+        "greeting": "Jai Shri Krishna",
+        "names": {"shehja": "Shehja", "ansh": "Madhav", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Yashoda"},
+        "rule": "User's Faith: Vaishnav / Pushtimarg. Greet warmly with 'Jai Shri Krishna'. Respect Ekadashi, Thakurji Seva, and Pushtimarg traditions. In Yashoda's Kitchen, STRICTLY suggest Pure Vaishnav Satvik recipes WITHOUT onion and WITHOUT garlic!",
+    },
+    "swaminarayan": {
+        "greeting": "Jay Swaminarayan",
+        "names": {"shehja": "Shehja", "ansh": "Akshar", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Bhakti"},
+        "rule": "User's Faith: Swaminarayan Sampraday. Greet warmly with 'Jay Swaminarayan'. Respect Shikshapatri, Vachanamrut, Ekadashi, and pure Satsang values. In Bhakti's Kitchen, STRICTLY suggest 100% Pure Swaminarayan Satvik vegetarian recipes WITHOUT onion and WITHOUT garlic!",
+    },
+    "sindhi": {
+        "greeting": "Jai Jhulelal",
+        "names": {"shehja": "Shehja", "ansh": "Vishal", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Dada / Vadil", "shastri": "Shastri Ji", "sweety": "Geeta"},
+        "rule": "User's Culture/Faith: Sindhi (Jhulelal). Greet warmly with 'Jai Jhulelal' or 'Jhulelal Bera Paar'. Respect Cheti Chand, Chaliha, and Guru Nanak/Jhulelal teachings. In Geeta's Kitchen, love including authentic Sindhi home classics (Dal Pakwan, Sai Bhaji, Sindhi Kadhi, Koki, Seyal Mani, Bhee) alongside everyday meals.",
+    },
     "universal": {
         "greeting": "Hello / Namaste",
         "names": {"shehja": "Shehja", "ansh": "Ansh", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Guide", "sweety": "Sweety"},
