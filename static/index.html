@@ -165,6 +165,16 @@
         </div>
         <div class="form-group"><label>Secret Answer</label><input type="text" id="regSecA" placeholder="Answer likhein..." /></div>
         <div class="error-msg" id="regErr"></div>
+        <div class="form-group">
+          <label>🙏 Aapka Dharm / Parampara (App usi hisaab se chalegi)</label>
+          <select id="regFaith">
+            <option value="hindu">🕉️ Hindu / Sanatan (Namaste)</option>
+            <option value="muslim">☪️ Muslim / Islam (Assalamu Alaikum)</option>
+            <option value="sikh">🪯 Sikh (Sat Sri Akal)</option>
+            <option value="christian">✝️ Christian (Peace & Blessings)</option>
+            <option value="universal">🌍 All / Universal</option>
+          </select>
+        </div>
         <button class="btn-primary" style="width:100%;padding:11px;margin-top:8px;" onclick="doSignup()">Create Account</button>
       </div>
       <div id="paneForgot" style="display:none;">
@@ -187,7 +197,16 @@
         <div class="error-msg" id="fErr"></div>
         <div class="ok-msg" id="fOk"></div>
       </div>
-      <button class="guest-btn" onclick="enterGuest()">👤 Continue as Guest (Data save nahi rahega)</button>
+      <div style="margin-top:10px;display:flex;gap:6px;align-items:center;">
+        <select id="guestFaith" style="flex:1;padding:9px;background:#101318;border:1px solid #323744;border-radius:10px;color:#eef1f6;font-size:12.5px;">
+          <option value="hindu">🕉️ Hindu / Sanatan</option>
+          <option value="muslim">☪️ Muslim / Islam</option>
+          <option value="sikh">🪯 Sikh</option>
+          <option value="christian">✝️ Christian</option>
+          <option value="universal">🌍 Universal</option>
+        </select>
+        <button class="guest-btn" style="margin-top:0;flex:1;" onclick="enterGuest()">👤 Guest Mode</button>
+      </div>
     </div>
   </div>
 
@@ -200,6 +219,13 @@
     <button class="new-chat-btn" onclick="startNewChat()"><span>＋</span> Naya Chat</button>
     <div class="chat-list" id="chatList"></div>
     <div class="sidebar-footer">
+      <select id="sideFaithSelect" onchange="changeFaith(this.value)" style="width:100%;padding:8px 10px;background:#161922;border:1px solid #323744;border-radius:9px;color:#eef1f6;font-size:12.5px;">
+        <option value="hindu">🕉️ Dharm: Hindu / Sanatan</option>
+        <option value="muslim">☪️ Faith: Muslim / Islam</option>
+        <option value="sikh">🪯 Faith: Sikh</option>
+        <option value="christian">✝️ Faith: Christian</option>
+        <option value="universal">🌍 Mode: Universal</option>
+      </select>
       <button class="side-btn" id="installBtn" style="display:none;" onclick="installApp()"><span>📲 Install SR App</span><span class="mode-badge">App</span></button>
       <button class="side-btn" id="authSideBtn" onclick="openAuthGate()"><span>🔐 Sign In / Switch</span><span class="mode-badge">Sync</span></button>
     </div>
@@ -263,8 +289,8 @@
     <div class="input-area">
       <div class="live-banner" id="liveBanner"><span id="liveStatus">🎙️ Sun rahi hoon... (Boliye)</span><div style="display:flex;gap:6px;"><button onclick="interruptAndListen()">🎙️ Abhi Bolo</button><button onclick="toggleLiveTalk()">⏹️ Band</button></div></div>
       <div class="toolbar-row">
-        <button class="tool-pill" style="border-color:#f59e0b;color:#fcd34d;" onclick="openKundliModal()">🪔 Kundli</button>
-        <button class="tool-pill" style="border-color:#a855f7;color:#d8b4fe;" onclick="openNumerologyDirect()">🔢 Num/Tarot</button>
+        <button class="tool-pill" id="faithToolBtn" style="border-color:#f59e0b;color:#fcd34d;" onclick="openFaithTool()">🪔 Kundli</button>
+        <button class="tool-pill" id="numToolBtn" style="border-color:#a855f7;color:#d8b4fe;" onclick="openNumerologyDirect()">🔢 Num/Tarot</button>
         <button class="tool-pill" style="border-color:#fb7185;color:#fda4af;" onclick="openKitchenModal()">👩‍🍳 Kitchen</button>
         <button class="tool-pill" onclick="openPptModal()">📊 PPT</button>
         <button class="tool-pill" onclick="openXlsxModal()">📗 Excel</button>
@@ -455,6 +481,59 @@
     </div>
   </div>
 
+    <div class="modal-backdrop" id="islamicModal">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 style="margin:0;color:#34d399;">🕌 Ibadat — Azaan, Qibla & Zakat</h2>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="closeModal('islamicModal')">✕</button>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" id="iTabA" onclick="switchITab('a')">🕰️ Azaan / Roza</button>
+        <button class="tab-btn" id="iTabQ" onclick="switchITab('q')">🧭 Qibla</button>
+        <button class="tab-btn" id="iTabZ" onclick="switchITab('z')">🪙 Zakat</button>
+      </div>
+      <div id="iBoxA">
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="text" id="iCity" value="Ahmedabad" placeholder="City (e.g. Surat, Mumbai, Delhi...)" style="flex:1;padding:8px 10px;background:#101318;border:1px solid #323744;border-radius:8px;color:#fff;" />
+          <button class="btn-primary" onclick="loadIslamicData()">Check</button>
+        </div>
+        <div id="iTimesBox" style="background:#101318;padding:12px;border-radius:10px;border:1px solid #1e4d3b;font-size:13.5px;line-height:1.7;">⏳ Load ho raha hai...</div>
+      </div>
+      <div id="iBoxQ" style="display:none;text-align:center;">
+        <div id="qiblaSvgBox"></div>
+        <div id="qiblaText" style="font-size:13.5px;color:#a7f3d0;margin-top:6px;"></div>
+        <button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="startLiveCompass()">🧭 Phone Compass Rotate Karein</button>
+      </div>
+      <div id="iBoxZ" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="form-group"><label>Cash / Bank (₹)</label><input type="number" id="zCash" value="0" /></div>
+          <div class="form-group"><label>Gold Value (₹)</label><input type="number" id="zGold" value="0" /></div>
+          <div class="form-group"><label>Silver Value (₹)</label><input type="number" id="zSilver" value="0" /></div>
+          <div class="form-group"><label>Business Stock (₹)</label><input type="number" id="zBiz" value="0" /></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="form-group"><label>Karz / Debt (₹)</label><input type="number" id="zDebt" value="0" /></div>
+          <div class="form-group"><label>Nisab Limit (₹)</label><input type="number" id="zNisab" value="65000" /></div>
+        </div>
+        <button class="btn-primary" style="width:100%;" onclick="calcZakat()">🪙 2.5% Zakat Calculate Karein</button>
+        <div id="zResult" style="margin-top:10px;font-size:13.5px;background:#101318;padding:10px;border-radius:8px;display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="faithHubModal">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 id="fhTitle" style="margin:0;color:#fbbf24;">🙏 Faith & Charity</h2>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="closeModal('faithHubModal')">✕</button>
+      </div>
+      <div class="form-group"><label id="fhCalcLbl">Monthly Income / Savings (₹)</label><input type="number" id="fhIncome" value="10000" /></div>
+      <button class="btn-primary" style="width:100%;margin-bottom:10px;" onclick="calcTenPercent()">✨ 10% Calculate Karein</button>
+      <div id="fhRes" style="font-size:14px;color:#34d399;margin-bottom:12px;"></div>
+      <button class="btn-secondary" style="width:100%;" onclick="askFaithGuide()">💬 Aaj ki Prayer / Spiritual Guidance Poochein</button>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="pptModal">
     <div class="modal">
       <h2>📊 Unique PPT Maker (.pptx)</h2>
@@ -556,18 +635,145 @@
     }
     if (location.hash === "#sr-admin") setTimeout(openSettings, 400);
 
+    let currentFaith = localStorage.getItem("shehja_guest_faith") || "hindu";
+    const FAITH_UI = {
+      hindu: {
+        toolLabel: "🪔 Kundli", showNum: true,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Ansh (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🪔 Shastri Ji (Pandit)", sweety: "👩‍🍳 Sweety (Kitchen)" },
+        info: {
+          shehja: { title: "Namaste! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Kuch padhna ho, dil ki baat karni ho, ya PPT/notes chahiye — sab milkar karenge!" },
+          ansh: { title: "Pranam! Main Ansh hoon — Tutor 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — koi bhi doubt poochein, blackboard par step-by-step samjhaunga!" },
+          shastri: { title: "Pranam! Main Shastri Ji hoon 🪔", desc: "Janam Kundli, Ank-Jyotish, Tarot, 36-Gun Milan ya Panchang — neeche 🪔 Kundli se dekhein!" },
+          sweety: { title: "Namaste! Main Sweety hoon 👩‍🍳", desc: "Aaj kitchen mein kya naya aur easy banayein? 👩‍🍳 Kitchen mein ghar ki pasand save karein!" },
+          vadil: { title: "Aao beta, main hoon na 🤍", desc: "Mann bhaari ho ya akelapan lage — bina kisi jhijhak ke dil ki baat kaho, main sun raha hoon." }
+        }
+      },
+      muslim: {
+        toolLabel: "🕌 Ibadat", showNum: false,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Haarish (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Buzurg (Safe Space)", shastri: "🕌 Hafez / Aalima", sweety: "🍲 Zarina (Kitchen)" },
+        info: {
+          shehja: { title: "Assalamu Alaikum! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, dil ki baat ya daily kaam — milkar sab aasaan banate hain!" },
+          ansh: { title: "Assalamu Alaikum! Main Haarish hoon 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — koi bhi sawaal poochein, blackboard par detail mein samjhaunga!" },
+          shastri: { title: "Assalamu Alaikum! Hafez / Aalima 🕌", desc: "Namaz/Azaan & Sehri-Iftar waqt, Qibla Compass, Zakat Calculator ya Deen ki baat — neeche 🕌 Ibadat dabayein!" },
+          sweety: { title: "Assalamu Alaikum! Main Zarina hoon 🍲", desc: "Aaj kitchen mein kya lazeez aur Halal banayein? 👩‍🍳 Kitchen mein ghar ke logon ki pasand save karein!" },
+          vadil: { title: "Assalamu Alaikum beta 🤍", desc: "Koi bhi pareshani, akelapan ya tension ho — ek buzurg ki tarah main hamesha aapki baat sunne ke liye hoon." }
+        }
+      },
+      sikh: {
+        toolLabel: "🙏 Virsa", showNum: false,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Harpreet (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Babaji (Safe Space)", shastri: "🙏 Giani Ji", sweety: "🍲 Simran (Kitchen)" },
+        info: {
+          shehja: { title: "Sat Sri Akal ji! Main Shehja hoon 🌸", desc: "Ki haal hai dost? Padhai, coding ya rozana de kaam — milkar karde haan!" },
+          ansh: { title: "Sat Sri Akal! Main Harpreet hoon 📚", desc: "Std 8–12 ya College — blackboard te har doubt clear karange!" },
+          shastri: { title: "Sat Sri Akal! Main Giani Ji haan 🙏", desc: "Gurbani vichaar, Seva, ya Dasvandh (10%) calculation — neeche 🙏 Virsa te click karo!" },
+          sweety: { title: "Sat Sri Akal! Main Simran haan 🍲", desc: "Aaj rasoi vich ki swadisht banaiye? 👩‍🍳 Kitchen vich setup save karo!" },
+          vadil: { title: "Aao puttar, main haan na 🤍", desc: "Dil halka karna hove ya koi fikar hove — bejhijhak gall karo." }
+        }
+      },
+      christian: {
+        toolLabel: "⛪ Prayer", showNum: false,
+        labels: { shehja: "💬 Shehja (Friend)", ansh: "📚 Daniel (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Elder (Safe Space)", shastri: "⛪ Pastor", sweety: "🍲 Maria (Kitchen)" },
+        info: {
+          shehja: { title: "Peace & Blessings! I am Shehja 🌸", desc: "How are you doing, friend? Let's study, build, or chat warmly together!" },
+          ansh: { title: "Greetings! I am Daniel — Tutor 📚", desc: "From Std 8–12 to College EduKnow — ask any doubt and learn step-by-step on the blackboard!" },
+          shastri: { title: "God bless you! Pastor here ⛪", desc: "Daily prayer, Bible wisdom, or 10% Tithe calculator — tap ⛪ Prayer below!" },
+          sweety: { title: "Blessings! I am Maria 🍲", desc: "What delicious homemade meal shall we cook today? Save family choices in 👩‍🍳 Kitchen!" },
+          vadil: { title: "I am right here with you 🤍", desc: "Feel free to share anything weighing on your heart — you are heard and cared for." }
+        }
+      },
+      universal: {
+        toolLabel: "✨ Wellness", showNum: true,
+        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Ansh (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🧭 Life Guide", sweety: "👩‍🍳 Sweety (Kitchen)" },
+        info: {
+          shehja: { title: "Hello! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, notes, PPT ya dil ki baat — sab milkar karte hain!" },
+          ansh: { title: "Hello! Main Ansh hoon — Tutor 📚", desc: "Std 8–12 ya College — blackboard par har topic detail mein samjhaunga!" },
+          shastri: { title: "Hello! Main aapka Guide hoon 🧭", desc: "Numerology, meditation aur life guidance ke liye poochein!" },
+          sweety: { title: "Hello! Main Sweety hoon 👩‍🍳", desc: "Aaj kitchen mein kya naya banayein? 👩‍🍳 Kitchen mein setup save karein!" },
+          vadil: { title: "Main hoon na aapke saath 🤍", desc: "Akelapan ya stress ho toh bina jhijhak dil ki baat share karein." }
+        }
+      }
+    };
+
+    function applyFaithUI(fKey) {
+      currentFaith = FAITH_UI[fKey] ? fKey : "hindu";
+      try { localStorage.setItem("shehja_guest_faith", currentFaith); } catch (e) {}
+      const cfg = FAITH_UI[currentFaith];
+      document.getElementById("sideFaithSelect").value = currentFaith;
+      document.getElementById("faithToolBtn").textContent = cfg.toolLabel;
+      document.getElementById("numToolBtn").style.display = cfg.showNum ? "inline-flex" : "none";
+      const sel = document.getElementById("personaSelect");
+      Array.from(sel.options).forEach(opt => {
+        if (cfg.labels[opt.value]) opt.textContent = cfg.labels[opt.value];
+      });
+      onPersonaChange();
+    }
+    async function changeFaith(fKey) {
+      applyFaithUI(fKey);
+      if (currentUser) {
+        await fetch("/api/auth/faith", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ faith: currentFaith }) });
+      }
+    }
+    function openFaithTool() {
+      if (currentFaith === "muslim") { switchITab("a"); document.getElementById("islamicModal").classList.add("open"); loadIslamicData(); }
+      else if (currentFaith === "sikh" || currentFaith === "christian") {
+        document.getElementById("fhTitle").textContent = currentFaith === "sikh" ? "🙏 Sikh Virsa & Dasvandh (10%)" : "⛪ Prayer & Tithe (10%)";
+        document.getElementById("fhRes").textContent = "";
+        document.getElementById("faithHubModal").classList.add("open");
+      } else { openKundliModal(); }
+    }
+    function switchITab(t) {
+      ["a","q","z"].forEach(x => {
+        document.getElementById("iTab" + x.toUpperCase()).classList.toggle("active", x === t);
+        document.getElementById("iBox" + x.toUpperCase()).style.display = (x === t) ? "block" : "none";
+      });
+    }
+    async function loadIslamicData() {
+      const city = document.getElementById("iCity").value.trim() || "Ahmedabad";
+      const res = await fetch("/api/islamic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "times", city }) });
+      const d = await res.json();
+      const t = d.times, q = d.qibla;
+      document.getElementById("iTimesBox").innerHTML = "<strong>🕰️ " + escapeHtml(t.city) + " (" + escapeHtml(t.date) + ")</strong><br>🌙 <b>Sehri Ends:</b> " + escapeHtml(t.sehri_ends) + "<br>🕌 <b>Fajr:</b> " + escapeHtml(t.fajr) + " | 🌅 <b>Sunrise:</b> " + escapeHtml(t.sunrise) + "<br>☀️ <b>Dhuhr (Zohar):</b> " + escapeHtml(t.dhuhr) + "<br>🌤️ <b>Asr (Shafi / Hanafi):</b> " + escapeHtml(t.asr_shafi) + " / " + escapeHtml(t.asr_hanafi) + "<br>🌇 <b>Maghrib (Iftar):</b> <span style='color:#34d399;font-weight:700;'>" + escapeHtml(t.maghrib_iftar) + "</span><br>🌌 <b>Isha:</b> " + escapeHtml(t.isha);
+      document.getElementById("qiblaSvgBox").innerHTML = d.svg;
+      document.getElementById("qiblaText").textContent = "🧭 Kaaba Direction from " + q.city + ": " + q.degrees + "° (" + q.direction + ")";
+    }
+    function startLiveCompass() {
+      if (!window.DeviceOrientationEvent) { alert("Phone compass sensor supported nahi hai."); return; }
+      window.addEventListener("deviceorientationabsolute", (e) => {
+        const svg = document.querySelector("#qiblaSvgBox svg");
+        if (svg && e.alpha !== null) svg.style.transform = "rotate(" + Math.round(e.alpha) + "deg)";
+      });
+      alert("🧭 Compass active! Phone ko flat pakad kar ghumayein.");
+    }
+    async function calcZakat() {
+      const res = await fetch("/api/islamic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "zakat", cash: document.getElementById("zCash").value || 0, gold: document.getElementById("zGold").value || 0, silver: document.getElementById("zSilver").value || 0, business: document.getElementById("zBiz").value || 0, debt: document.getElementById("zDebt").value || 0, nisab: document.getElementById("zNisab").value || 65000 }) });
+      const d = (await res.json()).zakat;
+      const box = document.getElementById("zResult"); box.style.display = "block";
+      box.innerHTML = "<b>Net Wealth:</b> ₹" + d.net_wealth + "<br><b>Zakat Farz Hai?</b> " + (d.eligible ? "<span style='color:#34d399'>Haan ✅ (2.5% Zakat: ₹" + d.zakat_due + ")</span>" : "Abhi Nisab (₹" + d.nisab + ") se kam hai.");
+    }
+    function calcTenPercent() {
+      const inc = parseFloat(document.getElementById("fhIncome").value || "0");
+      document.getElementById("fhRes").textContent = "10% Share (Dasvandh / Tithe): ₹" + (inc * 0.10).toFixed(2);
+    }
+    function askFaithGuide() {
+      closeModal("faithHubModal");
+      document.getElementById("personaSelect").value = "shastri"; onPersonaChange();
+      promptInput.value = currentFaith === "sikh" ? "Sat Sri Akal Giani Ji, aaj ke din ke liye koi pyara Gurbani vichaar aur positive guidance batayein." : "Peace & Blessings Pastor, please share an uplifting Bible verse and prayer for today.";
+      sendMessage();
+    }
+
     function onPersonaChange() {
       const p = document.getElementById("personaSelect").value;
       document.body.dataset.theme = p;
       document.getElementById("eduBar").style.display = (p === "ansh") ? "flex" : "none";
       document.getElementById("sweetyBar").style.display = (p === "sweety") ? "flex" : "none";
-      const info = PERSONA_INFO[p] || PERSONA_INFO.shehja;
+      const fInfo = (FAITH_UI[currentFaith] && FAITH_UI[currentFaith].info) || {};
+      const info = fInfo[p] || PERSONA_INFO[p] || PERSONA_INFO.shehja;
       document.getElementById("welcomeTitle").textContent = info.title;
       document.getElementById("welcomeDesc").textContent = info.desc;
     }
 
     function openAuthGate() { document.getElementById("authGate").style.display = "flex"; }
-    function enterGuest() { isGuest = true; document.getElementById("authGate").style.display = "none"; document.getElementById("userLabel").textContent = "Guest (Not Saved)"; }
+    function enterGuest() { isGuest = true; applyFaithUI(document.getElementById("guestFaith").value); document.getElementById("authGate").style.display = "none"; document.getElementById("userLabel").textContent = "Guest (Not Saved)"; }
     function switchAuthTab(t) {
       ["login", "signup", "forgot"].forEach(x => {
         document.getElementById("tab" + x[0].toUpperCase() + x.slice(1)).classList.toggle("active", x === t);
@@ -594,7 +800,7 @@
     }
     async function doSignup() {
       const err = document.getElementById("regErr"); err.style.display = "none";
-      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: document.getElementById("regName").value.trim(), email: document.getElementById("regEmail").value.trim(), password: document.getElementById("regPass").value, sec_q: document.getElementById("regSecQ").value, sec_a: document.getElementById("regSecA").value.trim() }) });
+      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: document.getElementById("regName").value.trim(), email: document.getElementById("regEmail").value.trim(), password: document.getElementById("regPass").value, sec_q: document.getElementById("regSecQ").value, sec_a: document.getElementById("regSecA").value.trim(), faith: document.getElementById("regFaith").value }) });
       const d = await res.json();
       if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
       isGuest = false; await initSession();
@@ -628,6 +834,7 @@
     async function initSession() {
       const me = await (await fetch("/api/auth/me")).json();
       currentUser = me.user;
+      if (currentUser && currentUser.faith) applyFaithUI(currentUser.faith); else applyFaithUI(currentFaith);
       const sideB = document.getElementById("authSideBtn");
       if (currentUser) {
         document.getElementById("authGate").style.display = "none";
@@ -728,7 +935,7 @@
       try {
         const res = await fetch("/api/tts", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: rawText, persona: document.getElementById("personaSelect").value, tone: document.getElementById("voiceTone").value })
+          body: JSON.stringify({ text: rawText, persona: document.getElementById("personaSelect").value, faith: currentFaith, tone: document.getElementById("voiceTone").value })
         });
         if (!res.ok) throw new Error("fallback");
         const blob = await res.blob(), url = URL.createObjectURL(blob);
