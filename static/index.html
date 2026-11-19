@@ -74,6 +74,7 @@
     .msg-bubble h2,.msg-bubble h3,.msg-bubble h4{margin:10px 0 5px;color:#fff}
     .msg-bubble p{margin-bottom:9px}.msg-bubble p:last-child{margin-bottom:0}
     .msg-bubble a{color:#38bdf8;text-decoration:underline}
+    .msg-bubble a.dl-btn{color:#fff !important;text-decoration:none !important}
     .msg-bubble code{background:#101218;padding:2px 6px;border-radius:5px;font-family:ui-monospace,monospace;font-size:13.5px;color:#f472b6}
     .code-block{background:#0b0d12;border:1px solid #2b303c;border-radius:10px;margin:10px 0;overflow:hidden}
     .code-header{background:#151821;padding:6px 12px;font-size:12px;color:var(--mt);display:flex;justify-content:space-between;align-items:center}
@@ -803,16 +804,39 @@
       const d = await res.json();
       const t = d.times, q = d.qibla;
       document.getElementById("iTimesBox").innerHTML = "<strong>🕰️ " + escapeHtml(t.city) + " (" + escapeHtml(t.date) + ")</strong><br>🌙 <b>Sehri Ends:</b> " + escapeHtml(t.sehri_ends) + "<br>🕌 <b>Fajr:</b> " + escapeHtml(t.fajr) + " | 🌅 <b>Sunrise:</b> " + escapeHtml(t.sunrise) + "<br>☀️ <b>Dhuhr (Zohar):</b> " + escapeHtml(t.dhuhr) + "<br>🌤️ <b>Asr (Shafi / Hanafi):</b> " + escapeHtml(t.asr_shafi) + " / " + escapeHtml(t.asr_hanafi) + "<br>🌇 <b>Maghrib (Iftar):</b> <span style='color:#34d399;font-weight:700;'>" + escapeHtml(t.maghrib_iftar) + "</span><br>🌌 <b>Isha:</b> " + escapeHtml(t.isha);
-      document.getElementById("qiblaSvgBox").innerHTML = d.svg;
+      qiblaDegVal = q.degrees; document.getElementById("qiblaSvgBox").innerHTML = d.svg;
       document.getElementById("qiblaText").textContent = "🧭 Kaaba Direction from " + q.city + ": " + q.degrees + "° (" + q.direction + ")";
     }
+    let compassListening = false, qiblaDegVal = 274;
     function startLiveCompass() {
-      if (!window.DeviceOrientationEvent) { alert("Phone compass sensor supported nahi hai."); return; }
-      window.addEventListener("deviceorientationabsolute", (e) => {
+      if (!window.DeviceOrientationEvent) { alert("Is browser mein Compass sensor nahi hai."); return; }
+      const onOrient = (e) => {
+        let heading = null;
+        if (typeof e.webkitCompassHeading === "number") heading = e.webkitCompassHeading;
+        else if (e.alpha !== null) heading = (360 - e.alpha) % 360;
+        if (heading === null) return;
         const svg = document.querySelector("#qiblaSvgBox svg");
-        if (svg && e.alpha !== null) svg.style.transform = "rotate(" + Math.round(e.alpha) + "deg)";
-      });
-      alert("🧭 Compass active! Phone ko flat pakad kar ghumayein.");
+        if (svg) svg.style.transform = "rotate(" + (-Math.round(heading)) + "deg)";
+        const diff = Math.round(((qiblaDegVal - heading) + 540) % 360 - 180);
+        const qt = document.getElementById("qiblaText");
+        if (qt) {
+          const hint = Math.abs(diff) <= 8 ? "✅ Qibla Direction Bilkul Saamne Hai!" : (diff > 0 ? "➡️ Phone ko " + diff + "° Right ghumayein" : "⬅️ Phone ko " + Math.abs(diff) + "° Left ghumayein");
+          qt.innerHTML = "🧭 Kaaba: <b>" + qiblaDegVal + "°</b> | Aapka Rukh: <b>" + Math.round(heading) + "°</b><br><span style='color:#fbbf24;font-weight:700;'>" + hint + "</span>";
+        }
+      };
+      const attach = () => {
+        if (!compassListening) {
+          compassListening = true;
+          window.addEventListener("deviceorientationabsolute", onOrient, true);
+          window.addEventListener("deviceorientation", onOrient, true);
+        }
+        alert("🧭 Live Compass chalu! Phone ko flat rakh kar ghumayein — jab teer upar aaye tab Qibla saamne hoga.");
+      };
+      if (typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then(st => { if (st === "granted") attach(); else alert("Compass permission allow karein."); }).catch(attach);
+      } else {
+        attach();
+      }
     }
     async function calcZakat() {
       const res = await fetch("/api/islamic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "zakat", cash: document.getElementById("zCash").value || 0, gold: document.getElementById("zGold").value || 0, silver: document.getElementById("zSilver").value || 0, business: document.getElementById("zBiz").value || 0, debt: document.getElementById("zDebt").value || 0, nisab: document.getElementById("zNisab").value || 65000 }) });

@@ -20,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from exporters import ICON_SVG, LAYOUTS, build_pptx_bytes, build_xlsx_bytes, make_sr_png
 from personas import build_system_prompt, detect_tts_config
+from islamic import compute_prayer_times, compute_qibla, compute_zakat, render_qibla_svg
 from vedic import TAROT_DECK, compute_gun_milan, compute_kundli, compute_numerology, get_today_panchang, render_kundli_svg, render_loshu_svg
 
 try:
@@ -117,6 +118,10 @@ def init_db():
         "api_key": env_key, "admin_pin": os.environ.get("SHEHJA_PIN", "1234"),
         "custom_prompt": os.environ.get("CUSTOM_PROMPT", ""),
     }
+    try:
+        db_exec("ALTER TABLE users ADD COLUMN faith TEXT DEFAULT 'hindu'")
+    except Exception:
+        pass
     for k, v in defaults.items():
         db_exec("INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING", (k, v))
 
@@ -517,8 +522,8 @@ class ShehjaHandler(BaseHTTPRequestHandler):
         tok = c["shehja_token"].value if "shehja_token" in c else ""
         if not tok:
             return None
-        row = db_exec("SELECT u.id, u.name, u.email FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?", (tok,), fetch="one")
-        return {"id": row[0], "name": row[1], "email": row[2]} if row else None
+        row = db_exec("SELECT u.id, u.name, u.email, COALESCE(u.faith, 'hindu') FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?", (tok,), fetch="one")
+        return {"id": row[0], "name": row[1], "email": row[2], "faith": row[3]} if row else None
 
     def send_bytes(self, status, ctype, body, extra_headers=None):
         self.send_response(status)
@@ -640,6 +645,30 @@ class ShehjaHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = urllib.parse.urlparse(self.path).path
 
+        if path == "/api/auth/faith":
+            u = self.get_session_user()
+            faith = (self.read_json().get("faith") or "hindu").strip().lower()
+            if u:
+                db_exec("UPDATE users SET faith = ? WHERE id = ?", (faith, u["id"]))
+            self.send_json(200, {"ok": True, "faith": faith})
+            return
+
+        if path == "/api/islamic":
+            try:
+                d = self.read_json()
+                action, city = d.get("action", "times"), d.get("city", "Ahmedabad")
+                if action == "times":
+                    pt, qb = compute_prayer_times(city), compute_qibla(city)
+                    self.send_json(200, {"times": pt, "qibla": qb, "svg": render_qibla_svg(qb["degrees"])})
+                elif action == "zakat":
+                    zk = compute_zakat(d.get("cash",0), d.get("gold",0), d.get("silver",0), d.get("business",0), d.get("debt",0), d.get("nisab",65000))
+                    self.send_json(200, {"zakat": zk})
+                else:
+                    self.send_json(400, {"error": "Unknown action"})
+            except Exception as e:
+                self.send_json(500, {"error": str(e)})
+            return
+
         if path == "/api/auth/signup":
             d = self.read_json()
             name, email, pw = (d.get("name") or "").strip(), (d.get("email") or "").strip().lower(), d.get("password") or ""
@@ -651,21 +680,22 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 self.send_json(400, {"error": "Email pehle se registered hai. Sign In karein!"})
                 return
             uid, tok, now = uuid.uuid4().hex, uuid.uuid4().hex + uuid.uuid4().hex, int(time.time())
-            db_exec("INSERT INTO users (id, name, email, pass_hash, sec_q, sec_a_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", (uid, name, email, hash_secret(pw), sec_q, hash_secret(sec_a), now))
+            faith = (d.get("faith") or "hindu").strip().lower()
+            db_exec("INSERT INTO users (id, name, email, pass_hash, sec_q, sec_a_hash, created_at, faith) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (uid, name, email, hash_secret(pw), sec_q, hash_secret(sec_a), now, faith))
             db_exec("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)", (tok, uid, now))
-            self.send_json(200, {"user": {"id": uid, "name": name, "email": email}}, {"Set-Cookie": f"shehja_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
+            self.send_json(200, {"user": {"id": uid, "name": name, "email": email, "faith": faith}}, {"Set-Cookie": f"shehja_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
             return
 
         if path == "/api/auth/login":
             d = self.read_json()
             email, pw = (d.get("email") or "").strip().lower(), d.get("password") or ""
-            row = db_exec("SELECT id, name, email, pass_hash FROM users WHERE email = ?", (email,), fetch="one")
+            row = db_exec("SELECT id, name, email, pass_hash, COALESCE(faith, 'hindu') FROM users WHERE email = ?", (email,), fetch="one")
             if not row or not verify_secret(pw, row[3]):
                 self.send_json(401, {"error": "Email ya Password galat hai!"})
                 return
             tok = uuid.uuid4().hex + uuid.uuid4().hex
             db_exec("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)", (tok, row[0], int(time.time())))
-            self.send_json(200, {"user": {"id": row[0], "name": row[1], "email": row[2]}}, {"Set-Cookie": f"shehja_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
+            self.send_json(200, {"user": {"id": row[0], "name": row[1], "email": row[2], "faith": row[4]}}, {"Set-Cookie": f"shehja_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
             return
 
         if path == "/api/auth/logout":
@@ -745,7 +775,8 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 if cfg["provider"] == "demo":
                     reading = f"Pranam {nu['name']}! Aapka Mulank **{nu['mulank']}**, Bhagyank **{nu['bhagyank']}**, Kua **{nu['kua']}** aur Naam Ank **{nu['naam_ank']}** hai. Lucky Numbers: **{nu['lucky_numbers']}**. *(Demo Mode)*"
                 else:
-                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
+                    active_faith = (u["faith"] if u else None) or d.get("faith") or "hindu"
+                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"], faith=active_faith)
                     q_txt = (
                         f"Complete Vedic & Lo Shu Numerology Report:\n"
                         f"- Naam: {nu['name']} (Chaldean Total: {nu['chaldean_raw']} -> {nu['naam_ank']}), Maa ka Naam Ank: {nu['matri_ank']}\n"
