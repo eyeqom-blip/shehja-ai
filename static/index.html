@@ -230,6 +230,9 @@
     <button class="new-chat-btn" onclick="startNewChat()"><span>＋</span> Naya Chat</button>
     <div class="chat-list" id="chatList"></div>
     <div class="sidebar-footer">
+            <button class="side-btn" id="pushBtn" onclick="enableDailyCarePush()"><span>🔔 Daily Care Alerts</span><span class="mode-badge" id="pushBadge">OFF</span></button>
+      <button class="side-btn" id="fastBtn" onclick="toggleFastingToday()"><span>🌙 Aaj Roza / Vrat / Atthai</span><span class="mode-badge" id="fastBadge">OFF</span></button>
+      <button class="side-btn" onclick="testPushNow()"><span>📨 Test Notification</span><span class="mode-badge">Try</span></button>
       <select id="sideFaithSelect" onchange="changeFaith(this.value)" style="width:100%;padding:8px 10px;background:#161922;border:1px solid #323744;border-radius:9px;color:#eef1f6;font-size:12.5px;">
         <option value="hindu">🕉️ Dharm: Hindu / Sanatan</option>
         <option value="muslim">☪️ Faith: Muslim / Islam</option>

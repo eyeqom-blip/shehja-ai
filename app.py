@@ -10,6 +10,7 @@ import re
 import smtplib
 import sqlite3
 import ssl
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -20,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from exporters import ICON_SVG, LAYOUTS, build_pptx_bytes, build_xlsx_bytes, make_sr_png
 from personas import build_system_prompt, detect_tts_config
+from notifier import build_caring_message, ensure_vapid_keys, run_notification_tick, send_push_one
 from islamic import compute_prayer_times, compute_qibla, compute_zakat, render_qibla_svg
 from vedic import TAROT_DECK, compute_gun_milan, compute_kundli, compute_numerology, get_today_panchang, render_kundli_svg, render_loshu_svg
 
@@ -108,6 +110,8 @@ def init_db():
         "CREATE TABLE IF NOT EXISTS user_chats (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL, updated_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS user_messages (id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, seq INTEGER NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL, created_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS kitchen_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, updated_at BIGINT NOT NULL)",
+        "CREATE TABLE IF NOT EXISTS push_subscriptions (id TEXT PRIMARY KEY, sub_json TEXT NOT NULL, faith TEXT NOT NULL, user_name TEXT NOT NULL, is_fasting INTEGER DEFAULT 0, updated_at BIGINT NOT NULL)",
+        "CREATE TABLE IF NOT EXISTS sent_notifications (slot_key TEXT PRIMARY KEY, sent_at BIGINT NOT NULL)",
     ]
     for s in stmts:
         db_exec(s)
@@ -124,6 +128,7 @@ def init_db():
         pass
     for k, v in defaults.items():
         db_exec("INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING", (k, v))
+    ensure_vapid_keys(db_exec)
 
 
 def get_indian_season():
@@ -506,7 +511,25 @@ MANIFEST_JSON = json.dumps({
         {"src": "/icon.svg?v=5", "sizes": "any", "type": "image/svg+xml"},
     ],
 })
-SW_JS = "self.addEventListener('fetch', function(e) {});"
+SW_JS = """
+self.addEventListener('fetch', function(e) {});
+self.addEventListener('push', function(event) {
+  var data = { title: 'Shehja — SR', body: 'Aapke liye ek pyaara message hai!', url: '/?sr=v5' };
+  try { if (event.data) data = Object.assign(data, event.data.json()); } catch (e) {}
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png?v=5',
+      badge: '/icon-192.png?v=5',
+      data: { url: data.url || '/?sr=v5' }
+    })
+  );
+});
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  event.waitUntil(clients.openWindow((event.notification.data && event.notification.data.url) || '/?sr=v5'));
+});
+"""
 
 
 class ShehjaHandler(BaseHTTPRequestHandler):
@@ -580,9 +603,13 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 return
             rows = db_exec("SELECT role, content FROM user_messages WHERE chat_id = ? ORDER BY seq ASC", (cid,), fetch="all") or []
             self.send_json(200, [{"role": r[0], "content": r[1]} for r in rows])
+        elif path == "/api/push/key":
+            pub, _ = ensure_vapid_keys(db_exec)
+            self.send_json(200, {"public_key": pub})
         elif path == "/health":
             try:
                 db_exec("SELECT 1", fetch="one")
+                threading.Thread(target=run_notification_tick, args=(db_exec,), daemon=True).start()
                 self.send_json(200, {"status": "ok", "db": "neon" if USE_PG else "sqlite", "uptime_sec": int(time.time() - START_TIME)})
             except Exception as e:
                 self.send_json(500, {"status": "error", "error": str(e)})
@@ -644,6 +671,50 @@ class ShehjaHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urllib.parse.urlparse(self.path).path
+
+        if path == "/api/push/subscribe":
+            try:
+                d = self.read_json()
+                sub = d.get("subscription")
+                if not sub or not sub.get("endpoint"):
+                    self.send_json(400, {"error": "Invalid subscription"})
+                    return
+                sid = hashlib.sha256(sub["endpoint"].encode("utf-8")).hexdigest()[:32]
+                u = self.get_session_user()
+                uname = (u["name"] if u else d.get("name")) or "Dost"
+                faith = (u["faith"] if u else d.get("faith")) or "hindu"
+                fast = 1 if d.get("is_fasting") else 0
+                db_exec(
+                    "INSERT INTO push_subscriptions (id, sub_json, faith, user_name, is_fasting, updated_at) VALUES (?, ?, ?, ?, ?, ?) "
+                    "ON CONFLICT (id) DO UPDATE SET sub_json = EXCLUDED.sub_json, faith = EXCLUDED.faith, user_name = EXCLUDED.user_name, is_fasting = EXCLUDED.is_fasting, updated_at = EXCLUDED.updated_at",
+                    (sid, json.dumps(sub), faith, uname, fast, int(time.time())),
+                )
+                self.send_json(200, {"ok": True})
+            except Exception as e:
+                self.send_json(500, {"error": str(e)})
+            return
+
+        if path == "/api/push/test":
+            try:
+                d = self.read_json()
+                sub = d.get("subscription")
+                if not sub:
+                    self.send_json(400, {"error": "Pehle Notifications Allow karein!"})
+                    return
+                _, priv = ensure_vapid_keys(db_exec)
+                u = self.get_session_user()
+                faith = (u["faith"] if u else d.get("faith")) or "hindu"
+                uname = (u["name"] if u else d.get("name")) or "Dost"
+                slot = d.get("slot") or "morning"
+                msg = build_caring_message(slot, faith, uname, bool(d.get("is_fasting"))) or ("🌸 Shehja", "Daily Care Notifications ON ho gayi hain!")
+                ok, st = send_push_one(sub, msg[0], msg[1], priv)
+                if not ok:
+                    self.send_json(500, {"error": st})
+                    return
+                self.send_json(200, {"ok": True})
+            except Exception as e:
+                self.send_json(500, {"error": str(e)})
+            return
 
         if path == "/api/auth/faith":
             u = self.get_session_user()
