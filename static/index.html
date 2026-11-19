@@ -508,17 +508,18 @@
         <button class="tab-btn" id="iTabQ" onclick="switchITab('q')">🧭 Qibla</button>
         <button class="tab-btn" id="iTabZ" onclick="switchITab('z')">🪙 Zakat</button>
       </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <input type="text" id="iCity" value="Ahmedabad" placeholder="City name..." style="flex:1;padding:8px 10px;background:#101318;border:1px solid #323744;border-radius:8px;color:#fff;" />
+        <button class="btn-primary" onclick="useManualCity()">Check</button>
+        <button class="btn-secondary" style="border-color:#10b981;color:#34d399;" onclick="useGpsLocation()">📍 GPS</button>
+      </div>
       <div id="iBoxA">
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <input type="text" id="iCity" value="Ahmedabad" placeholder="City (e.g. Surat, Mumbai, Delhi...)" style="flex:1;padding:8px 10px;background:#101318;border:1px solid #323744;border-radius:8px;color:#fff;" />
-          <button class="btn-primary" onclick="loadIslamicData()">Check</button>
-        </div>
         <div id="iTimesBox" style="background:#101318;padding:12px;border-radius:10px;border:1px solid #1e4d3b;font-size:13.5px;line-height:1.7;">⏳ Load ho raha hai...</div>
       </div>
       <div id="iBoxQ" style="display:none;text-align:center;">
         <div id="qiblaSvgBox"></div>
         <div id="qiblaText" style="font-size:13.5px;color:#a7f3d0;margin-top:6px;"></div>
-        <button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="startLiveCompass()">🧭 Phone Compass Rotate Karein</button>
+        <button class="btn-primary" style="margin-top:8px;width:100%;" onclick="startLiveCompass(false)">🧭 Live Phone Compass Chalayein</button>
       </div>
       <div id="iBoxZ" style="display:none;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -792,24 +793,67 @@
         document.getElementById("faithHubModal").classList.add("open");
       } else { openKundliModal(); }
     }
+    let gpsLat = null, gpsLon = null, compassListening = false, qiblaDegVal = 274.5;
+    function calcLocalQibla(lat, lon) {
+      const r = Math.PI / 180, p1 = lat * r, p2 = 21.4225 * r, dl = (39.8262 - lon) * r;
+      const y = Math.sin(dl) * Math.cos(p2), x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+      return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+    }
+    function renderLocalQiblaSvg(deg) {
+      return '<svg viewBox="0 0 240 240" width="210" height="210" style="background:#071a14;border:2px solid #10b981;border-radius:50%;display:block;margin:8px auto;"><circle cx="120" cy="120" r="105" fill="none" stroke="#1e4d3b" stroke-width="2"/><text x="120" y="24" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">N</text><text x="220" y="125" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">E</text><text x="120" y="230" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">S</text><text x="20" y="125" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">W</text><g transform="rotate(' + deg + ' 120 120)"><polygon points="120,34 130,120 120,108 110,120" fill="#fbbf24"/><polygon points="120,206 127,120 120,132 113,120" fill="#475569"/><circle cx="120" cy="34" r="6" fill="#10b981"/></g><circle cx="120" cy="120" r="8" fill="#10b981"/></svg>';
+    }
     function switchITab(t) {
       ["a","q","z"].forEach(x => {
         document.getElementById("iTab" + x.toUpperCase()).classList.toggle("active", x === t);
         document.getElementById("iBox" + x.toUpperCase()).style.display = (x === t) ? "block" : "none";
       });
+      if (t === "q") {
+        if (!document.getElementById("qiblaSvgBox").innerHTML.trim()) {
+          document.getElementById("qiblaSvgBox").innerHTML = renderLocalQiblaSvg(qiblaDegVal);
+          document.getElementById("qiblaText").textContent = "🧭 Kaaba Angle: " + qiblaDegVal.toFixed(1) + "°";
+        }
+        startLiveCompass(true);
+      }
+    }
+    function useManualCity() { gpsLat = null; gpsLon = null; loadIslamicData(); }
+    function useGpsLocation() {
+      if (!navigator.geolocation) { alert("GPS supported nahi hai."); return; }
+      document.getElementById("iTimesBox").textContent = "📍 GPS location track ho rahi hai...";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          gpsLat = pos.coords.latitude; gpsLon = pos.coords.longitude;
+          qiblaDegVal = calcLocalQibla(gpsLat, gpsLon);
+          document.getElementById("iCity").value = "GPS (" + gpsLat.toFixed(2) + ", " + gpsLon.toFixed(2) + ")";
+          document.getElementById("qiblaSvgBox").innerHTML = renderLocalQiblaSvg(qiblaDegVal);
+          document.getElementById("qiblaText").textContent = "🧭 Kaaba Direction (Your GPS): " + qiblaDegVal.toFixed(1) + "°";
+          loadIslamicData();
+        },
+        () => { document.getElementById("iTimesBox").textContent = "⚠️ Location permission allow karein ya city name likhein."; },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
     }
     async function loadIslamicData() {
-      const city = document.getElementById("iCity").value.trim() || "Ahmedabad";
-      const res = await fetch("/api/islamic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "times", city }) });
-      const d = await res.json();
-      const t = d.times, q = d.qibla;
-      document.getElementById("iTimesBox").innerHTML = "<strong>🕰️ " + escapeHtml(t.city) + " (" + escapeHtml(t.date) + ")</strong><br>🌙 <b>Sehri Ends:</b> " + escapeHtml(t.sehri_ends) + "<br>🕌 <b>Fajr:</b> " + escapeHtml(t.fajr) + " | 🌅 <b>Sunrise:</b> " + escapeHtml(t.sunrise) + "<br>☀️ <b>Dhuhr (Zohar):</b> " + escapeHtml(t.dhuhr) + "<br>🌤️ <b>Asr (Shafi / Hanafi):</b> " + escapeHtml(t.asr_shafi) + " / " + escapeHtml(t.asr_hanafi) + "<br>🌇 <b>Maghrib (Iftar):</b> <span style='color:#34d399;font-weight:700;'>" + escapeHtml(t.maghrib_iftar) + "</span><br>🌌 <b>Isha:</b> " + escapeHtml(t.isha);
-      qiblaDegVal = q.degrees; document.getElementById("qiblaSvgBox").innerHTML = d.svg;
-      document.getElementById("qiblaText").textContent = "🧭 Kaaba Direction from " + q.city + ": " + q.degrees + "° (" + q.direction + ")";
+      const box = document.getElementById("iTimesBox");
+      box.textContent = "⏳ Timing load ho rahi hai...";
+      try {
+        const city = document.getElementById("iCity").value.trim() || "Ahmedabad";
+        const res = await fetch("/api/islamic", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "times", city, lat: gpsLat, lon: gpsLon })
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || "Load failed");
+        const t = d.times, q = d.qibla;
+        box.innerHTML = "<strong>🕰️ " + escapeHtml(t.city) + " (" + escapeHtml(t.date) + ")</strong><br>🌙 <b>Sehri Ends:</b> " + escapeHtml(t.sehri_ends) + "<br>🕌 <b>Fajr:</b> " + escapeHtml(t.fajr) + " | 🌅 <b>Sunrise:</b> " + escapeHtml(t.sunrise) + "<br>☀️ <b>Dhuhr (Zohar):</b> " + escapeHtml(t.dhuhr) + "<br>🌤️ <b>Asr (Shafi / Hanafi):</b> " + escapeHtml(t.asr_shafi) + " / " + escapeHtml(t.asr_hanafi) + "<br>🌇 <b>Maghrib (Iftar):</b> <span style='color:#34d399;font-weight:700;'>" + escapeHtml(t.maghrib_iftar) + "</span><br>🌌 <b>Isha:</b> " + escapeHtml(t.isha);
+        qiblaDegVal = q.degrees;
+        document.getElementById("qiblaSvgBox").innerHTML = d.svg;
+        document.getElementById("qiblaText").textContent = "🧭 Kaaba Direction from " + q.city + ": " + q.degrees + "° (" + q.direction + ")";
+      } catch (e) {
+        box.innerHTML = "⚠️ " + escapeHtml(e.message) + " (Retry dabayein)";
+      }
     }
-    let compassListening = false, qiblaDegVal = 274;
-    function startLiveCompass() {
-      if (!window.DeviceOrientationEvent) { alert("Is browser mein Compass sensor nahi hai."); return; }
+    function startLiveCompass(silent) {
+      if (!window.DeviceOrientationEvent) { if (!silent) alert("Compass sensor available nahi hai."); return; }
       const onOrient = (e) => {
         let heading = null;
         if (typeof e.webkitCompassHeading === "number") heading = e.webkitCompassHeading;
@@ -820,8 +864,8 @@
         const diff = Math.round(((qiblaDegVal - heading) + 540) % 360 - 180);
         const qt = document.getElementById("qiblaText");
         if (qt) {
-          const hint = Math.abs(diff) <= 8 ? "✅ Qibla Direction Bilkul Saamne Hai!" : (diff > 0 ? "➡️ Phone ko " + diff + "° Right ghumayein" : "⬅️ Phone ko " + Math.abs(diff) + "° Left ghumayein");
-          qt.innerHTML = "🧭 Kaaba: <b>" + qiblaDegVal + "°</b> | Aapka Rukh: <b>" + Math.round(heading) + "°</b><br><span style='color:#fbbf24;font-weight:700;'>" + hint + "</span>";
+          const hint = Math.abs(diff) <= 8 ? "✅ Qibla Bilkul Saamne Hai!" : (diff > 0 ? "➡️ Phone " + diff + "° Right ghumayein" : "⬅️ Phone " + Math.abs(diff) + "° Left ghumayein");
+          qt.innerHTML = "🧭 Kaaba: <b>" + qiblaDegVal.toFixed(1) + "°</b> | Rukh: <b>" + Math.round(heading) + "°</b><br><span style='color:#fbbf24;font-weight:700;'>" + hint + "</span>";
         }
       };
       const attach = () => {
@@ -830,13 +874,11 @@
           window.addEventListener("deviceorientationabsolute", onOrient, true);
           window.addEventListener("deviceorientation", onOrient, true);
         }
-        alert("🧭 Live Compass chalu! Phone ko flat rakh kar ghumayein — jab teer upar aaye tab Qibla saamne hoga.");
+        if (!silent) alert("🧭 Live Compass active! Phone ko flat rakh kar ghumayein.");
       };
       if (typeof DeviceOrientationEvent.requestPermission === "function") {
-        DeviceOrientationEvent.requestPermission().then(st => { if (st === "granted") attach(); else alert("Compass permission allow karein."); }).catch(attach);
-      } else {
-        attach();
-      }
+        DeviceOrientationEvent.requestPermission().then(st => { if (st === "granted") attach(); }).catch(attach);
+      } else { attach(); }
     }
     async function calcZakat() {
       const res = await fetch("/api/islamic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "zakat", cash: document.getElementById("zCash").value || 0, gold: document.getElementById("zGold").value || 0, silver: document.getElementById("zSilver").value || 0, business: document.getElementById("zBiz").value || 0, debt: document.getElementById("zDebt").value || 0, nisab: document.getElementById("zNisab").value || 65000 }) });
@@ -844,6 +886,7 @@
       const box = document.getElementById("zResult"); box.style.display = "block";
       box.innerHTML = "<b>Net Wealth:</b> ₹" + d.net_wealth + "<br><b>Zakat Farz Hai?</b> " + (d.eligible ? "<span style='color:#34d399'>Haan ✅ (2.5% Zakat: ₹" + d.zakat_due + ")</span>" : "Abhi Nisab (₹" + d.nisab + ") se kam hai.");
     }
+
     function calcTenPercent() {
       const inc = parseFloat(document.getElementById("fhIncome").value || "0");
       document.getElementById("fhRes").textContent = "10% Share (Dasvandh / Tithe): ₹" + (inc * 0.10).toFixed(2);

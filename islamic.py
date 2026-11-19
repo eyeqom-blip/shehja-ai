@@ -20,8 +20,18 @@ def _fmt_time(hours_float):
     return f"{h12:02d}:{mm:02d} {ampm}"
 
 
-def compute_qibla(city="Ahmedabad"):
-    lat, lon = CITIES.get((city or "").strip().lower(), (23.02, 72.57))
+def _resolve_coords(city, lat=None, lon=None):
+    if lat is not None and lon is not None:
+        try:
+            return float(lat), float(lon), (city or f"GPS ({float(lat):.2f}, {float(lon):.2f})")
+        except Exception:
+            pass
+    clat, clon = CITIES.get((city or "").strip().lower(), (23.02, 72.57))
+    return clat, clon, (city or "Ahmedabad")
+
+
+def compute_qibla(city="Ahmedabad", lat=None, lon=None):
+    lat, lon, label = _resolve_coords(city, lat, lon)
     lat1, lon1 = math.radians(lat), math.radians(lon)
     lat2, lon2 = math.radians(KAABA_LAT), math.radians(KAABA_LON)
     dlon = lon2 - lon1
@@ -30,7 +40,7 @@ def compute_qibla(city="Ahmedabad"):
     deg = (math.degrees(math.atan2(y, x)) + 360.0) % 360.0
     dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
     d_label = dirs[int((deg + 11.25) // 22.5) % 16]
-    return {"city": city or "Ahmedabad", "lat": lat, "lon": lon, "degrees": round(deg, 1), "direction": d_label}
+    return {"city": label, "lat": round(lat, 4), "lon": round(lon, 4), "degrees": round(deg, 1), "direction": d_label}
 
 
 def render_qibla_svg(deg):
@@ -51,8 +61,8 @@ def render_qibla_svg(deg):
     )
 
 
-def compute_prayer_times(city="Ahmedabad", date_str=None):
-    lat, lon = CITIES.get((city or "").strip().lower(), (23.02, 72.57))
+def compute_prayer_times(city="Ahmedabad", date_str=None, lat=None, lon=None):
+    lat, lon, label = _resolve_coords(city, lat, lon)
     if date_str:
         dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
     else:
@@ -65,7 +75,6 @@ def compute_prayer_times(city="Ahmedabad", date_str=None):
     a = y // 100
     b = 2 - a + a // 4
     jd = int(365.25 * (y + 4716)) + int(30.6001 * (m + 1)) + d + b - 1524.5 + (12.0 - 5.5) / 24.0
-
     D = jd - 2451545.0
     g = math.radians((357.529 + 0.98560028 * D) % 360.0)
     q = (280.459 + 0.98564736 * D) % 360.0
@@ -79,7 +88,7 @@ def compute_prayer_times(city="Ahmedabad", date_str=None):
     elif eot < -12:
         eot += 24
 
-    tz = 5.5
+    tz = round(lon / 15.0 * 2) / 2 if abs(lon - 77.0) > 25 else 5.5
     dhuhr = 12.0 + tz - (lon / 15.0) - eot
     lat_r = math.radians(lat)
 
@@ -90,33 +99,24 @@ def compute_prayer_times(city="Ahmedabad", date_str=None):
 
     ha_sun = ha_for_alt(-0.833)
     ha_18 = ha_for_alt(-18.0)
-
     asr_shafi_alt = math.degrees(math.atan(1.0 / (1.0 + math.tan(abs(lat_r - decl)))))
     asr_hanafi_alt = math.degrees(math.atan(1.0 / (2.0 + math.tan(abs(lat_r - decl)))))
 
     fajr = dhuhr - ha_18
     sunrise = dhuhr - ha_sun
-    asr_shafi = dhuhr + ha_for_alt(asr_shafi_alt)
-    asr_hanafi = dhuhr + ha_for_alt(asr_hanafi_alt)
     maghrib = dhuhr + ha_sun
     isha = dhuhr + ha_18
-
     return {
-        "city": city or "Ahmedabad",
-        "date": dt.strftime("%d %b %Y"),
-        "sehri_ends": _fmt_time(fajr - 10.0 / 60.0),
-        "fajr": _fmt_time(fajr),
-        "sunrise": _fmt_time(sunrise),
-        "dhuhr": _fmt_time(dhuhr),
-        "asr_shafi": _fmt_time(asr_shafi),
-        "asr_hanafi": _fmt_time(asr_hanafi),
-        "maghrib_iftar": _fmt_time(maghrib),
-        "isha": _fmt_time(isha),
+        "city": label, "date": dt.strftime("%d %b %Y"),
+        "sehri_ends": _fmt_time(fajr - 10.0 / 60.0), "fajr": _fmt_time(fajr),
+        "sunrise": _fmt_time(sunrise), "dhuhr": _fmt_time(dhuhr),
+        "asr_shafi": _fmt_time(dhuhr + ha_for_alt(asr_shafi_alt)),
+        "asr_hanafi": _fmt_time(dhuhr + ha_for_alt(asr_hanafi_alt)),
+        "maghrib_iftar": _fmt_time(maghrib), "isha": _fmt_time(isha),
     }
 
 
 def compute_zakat(cash=0, gold_val=0, silver_val=0, business_val=0, debt=0, nisab=65000):
     total = max(0.0, float(cash) + float(gold_val) + float(silver_val) + float(business_val) - float(debt))
     eligible = total >= float(nisab)
-    zakat = round(total * 0.025, 2) if eligible else 0.0
-    return {"net_wealth": round(total, 2), "nisab": float(nisab), "eligible": eligible, "zakat_due": zakat}
+    return {"net_wealth": round(total, 2), "nisab": float(nisab), "eligible": eligible, "zakat_due": round(total * 0.025, 2) if eligible else 0.0}

@@ -546,15 +546,15 @@ class ShehjaHandler(BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if path == "/":
             with open(INDEX_PATH, "rb") as f:
-                self.send_bytes(200, "text/html; charset=utf-8", f.read(), {"Cache-Control": "no-store"})
+                self.send_bytes(200, "text/html; charset=utf-8", f.read(), {"Cache-Control": "no-store, no-cache, must-revalidate"})
         elif path == "/manifest.json":
-            self.send_bytes(200, "application/manifest+json; charset=utf-8", MANIFEST_JSON.encode("utf-8"), {"Cache-Control": "no-store"})
+            self.send_bytes(200, "application/manifest+json; charset=utf-8", MANIFEST_JSON.encode("utf-8"), {"Cache-Control": "no-store, no-cache, must-revalidate"})
         elif path == "/icon.svg":
-            self.send_bytes(200, "image/svg+xml; charset=utf-8", ICON_SVG.encode("utf-8"), {"Cache-Control": "no-store"})
+            self.send_bytes(200, "image/svg+xml; charset=utf-8", ICON_SVG.encode("utf-8"), {"Cache-Control": "no-store, no-cache, must-revalidate"})
         elif path == "/icon-192.png":
-            self.send_bytes(200, "image/png", make_sr_png(192), {"Cache-Control": "no-store"})
+            self.send_bytes(200, "image/png", make_sr_png(192), {"Cache-Control": "no-store, no-cache, must-revalidate"})
         elif path == "/icon-512.png":
-            self.send_bytes(200, "image/png", make_sr_png(512), {"Cache-Control": "no-store"})
+            self.send_bytes(200, "image/png", make_sr_png(512), {"Cache-Control": "no-store, no-cache, must-revalidate"})
         elif path == "/sw.js":
             self.send_bytes(200, "application/javascript; charset=utf-8", SW_JS.encode("utf-8"))
         elif path == "/api/auth/me":
@@ -658,7 +658,8 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 d = self.read_json()
                 action, city = d.get("action", "times"), d.get("city", "Ahmedabad")
                 if action == "times":
-                    pt, qb = compute_prayer_times(city), compute_qibla(city)
+                    lat, lon = d.get("lat"), d.get("lon")
+                    pt, qb = compute_prayer_times(city, lat=lat, lon=lon), compute_qibla(city, lat=lat, lon=lon)
                     self.send_json(200, {"times": pt, "qibla": qb, "svg": render_qibla_svg(qb["degrees"])})
                 elif action == "zakat":
                     zk = compute_zakat(d.get("cash",0), d.get("gold",0), d.get("silver",0), d.get("business",0), d.get("debt",0), d.get("nisab",65000))
