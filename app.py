@@ -202,79 +202,10 @@ def send_telegram_msg(text):
 
 
 def get_app_stats():
-    u_cnt = (db_exec("SELECT COUNT(*) FROM users", fetch="one") or [0])[0]
-    cutoff = int(time.time()) - 86400
-    u_24 = (db_exec("SELECT COUNT(*) FROM users WHERE created_at >= ?", (cutoff,), fetch="one") or [0])[0]
-    c_cnt = (db_exec("SELECT COUNT(*) FROM user_chats", fetch="one") or [0])[0]
-    m_cnt = (db_exec("SELECT COUNT(*) FROM user_messages", fetch="one") or [0])[0]
-    p_cnt = (db_exec("SELECT COUNT(*) FROM push_subscriptions", fetch="one") or [0])[0]
-    ad_row = db_exec("SELECT title FROM announcements WHERE active = 1 ORDER BY created_at DESC LIMIT 1", fetch="one")
-    hs = get_heal_stats()
-    cfg = get_config()
-    return {
-        "users": int(u_cnt), "new_users_24h": int(u_24), "chats": int(c_cnt), "messages": int(m_cnt),
-        "push_subs": int(p_cnt), "active_ad": (ad_row[0] if ad_row else "None"),
-        "db": ("neon" if USE_PG else "sqlite"), "uptime_sec": int(time.time() - START_TIME),
-        "model": cfg.get("model", ""), "healed_24h": hs["healed_24h"], "total_healed": hs["total_healed"], "last_bug": hs["last_bug"],
-    }
-
-
-def _format_stats_msg(prefix="📊 <b>Shehja SR Live Stats</b>"):
-    st = get_app_stats()
-    hrs, mins = st["uptime_sec"] // 3600, (st["uptime_sec"] % 3600) // 60
-    return (
-        f"{prefix}\n🌐 <b>shehja.sarahics.in</b>\n"
-        f"👥 Users: <b>{st['users']}</b> (+{st['new_users_24h']} last 24h)\n"
-        f"💬 Chats: <b>{st['chats']}</b> | ✉️ Msgs: <b>{st['messages']}</b>\n"
-        f"🔔 Push Alerts: <b>{st['push_subs']}</b> | 📢 Popup: <b>{st['active_ad']}</b>\n"
-        f"🛠️ Healed Bugs (24h/All): <b>{st['healed_24h']}/{st['total_healed']}</b>\n"
-        f"🗄️ DB: <b>{st['db'].upper()}</b> | 🤖 <code>{st['model']}</code> | ⏱️ {hrs}h {mins}m"
-    )
-
+    return collect_stats(db_exec, USE_PG, START_TIME, get_config(), get_heal_stats)
 
 def poll_telegram_commands():
-    tok, cid = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip(), os.environ.get("TELEGRAM_CHAT_ID", "").strip()
-    if not tok or not cid:
-        return
-    try:
-        row = db_exec("SELECT value FROM config WHERE key = 'tg_offset'", fetch="one")
-        offset = int(row[0]) if row and str(row[0]).isdigit() else 0
-        url = f"https://api.telegram.org/bot{tok}/getUpdates?offset={offset}&limit=10&timeout=0"
-        with urllib.request.urlopen(urllib.request.Request(url), timeout=6) as resp:
-            d = json.loads(resp.read().decode("utf-8"))
-        max_id = offset
-        for upd in (d.get("result") or []):
-            uid = int(upd.get("update_id", 0))
-            if uid >= max_id:
-                max_id = uid + 1
-            msg = upd.get("message") or {}
-            if str(msg.get("chat", {}).get("id", "")) != cid:
-                continue
-            txt = (msg.get("text") or "").strip()
-            if txt.startswith("/announce ") or txt.startswith("/ad "):
-                raw = txt.split(" ", 1)[1].strip()
-                parts = [x.strip() for x in raw.split("|")]
-                title = parts[0] if len(parts) > 0 and parts[0] else "New Update!"
-                body, link = (parts[1] if len(parts) > 1 else ""), (parts[2] if len(parts) > 2 else "")
-                db_exec("UPDATE announcements SET active = 0")
-                db_exec("INSERT INTO announcements (id, title, body, link_url, link_label, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)", (uuid.uuid4().hex[:12], title, body, link, "Download / Open", int(time.time())))
-                send_telegram_msg(f"✅ <b>App Popup Live!</b>\n<b>{title}</b>\n{body}\n{link}")
-            elif txt in ("/clear", "/clearad"):
-                db_exec("UPDATE announcements SET active = 0")
-                send_telegram_msg("🧹 App startup popup cleared!")
-            elif txt == "/stats":
-                send_telegram_msg(_format_stats_msg("📊 <b>Shehja SR Live Stats</b>"))
-            elif txt == "/heal":
-                hs = get_heal_stats()
-                lines = "\n".join(f"• <code>{x['kind']}</code>: {x['detail']}" for x in hs["recent"]) or "• No bugs detected — 100% clean!"
-                send_telegram_msg(f"🛠️ <b>Jarvis Self-Healer</b>\n24h: <b>{hs['healed_24h']}</b> | All: <b>{hs['total_healed']}</b>\n{lines}")
-            elif txt == "/help":
-                send_telegram_msg("🤖 <b>Shehja Dev Bot:</b>\n<code>/ad Title | Msg | Link</code>\n<code>/clearad</code> — Hide popup\n<code>/stats</code> — Live stats\n<code>/heal</code> — Self-Healer log")
-        if max_id > offset:
-            db_exec("INSERT INTO config (key, value) VALUES ('tg_offset', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (str(max_id),))
-    except Exception:
-        pass
-
+    poll_tg(db_exec, send_telegram_msg, get_app_stats, get_heal_stats)
 
 def run_dev_bg_tick():
     try:
@@ -288,10 +219,9 @@ def run_dev_bg_tick():
             sk = f"{ist.tm_year}-{ist.tm_mon:02d}-{ist.tm_mday:02d}_tg_stats"
             if not db_exec("SELECT slot_key FROM sent_notifications WHERE slot_key = ?", (sk,), fetch="one"):
                 db_exec("INSERT INTO sent_notifications (slot_key, sent_at) VALUES (?, ?) ON CONFLICT (slot_key) DO NOTHING", (sk, int(time.time())))
-                send_telegram_msg(_format_stats_msg("🌅 <b>Good Morning Rayan! Daily SR Update</b>"))
+                send_telegram_msg(format_stats(get_app_stats(), "🌅 <b>Good Morning Rayan! Daily SR Update</b>"))
     except Exception:
         pass
-
 
 def get_config():
     rows = db_exec("SELECT key, value FROM config", fetch="all") or []
@@ -1206,8 +1136,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
         if path == "/api/chat":
             try:
                 d = self.read_json()
-                u = self.get_session_user()
-                cfg = get_config()
+                u, cfg = self.get_session_user(), get_config()
                 healed = heal_chat_request(d, u, set(FAITH_PROFILES.keys()))
                 history = healed["history"]
                 if not history:
@@ -1220,31 +1149,22 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                         if d["kitchen"].get("members"): kitchen_ctx["members"] = d["kitchen"]["members"]
                         if d["kitchen"].get("occasion"): kitchen_ctx["occasion"] = d["kitchen"]["occasion"]
                     kitchen_ctx["season"] = get_indian_season()
-                req_faith, group_mode = healed["faith"], healed["group_mode"]
-                last_txt = history[-1].get("content", "")
+                req_faith, group_mode, last_txt = healed["faith"], healed["group_mode"], history[-1].get("content", "")
                 pre = jarvis_pre_audit(history, last_txt, req_faith, persona, group_mode, FAITH_PROFILES)
                 eff_faith, clean_hist = pre["effective_faith"], pre["clean_history"]
                 sys_txt = build_system_prompt(persona, healed["edu"], group_mode, cfg["custom_prompt"], kitchen_ctx=kitchen_ctx, faith=eff_faith, audit_note=pre["audit_note"])
                 if live_mode:
                     sys_txt += "\n\nLIVE TALK SYNC RULE: Keep reply crisp (2-4 sentences). At VERY END add exact English tag [SPOKEN]your reply in spoken Devanagari Hindi with soft commas and '।' (never translate tag SPOKEN)[/SPOKEN]."
-
                 if cfg["provider"] == "demo":
                     reply = call_demo(last_txt, persona, eff_faith)
                 elif cfg["provider"] == "gemini":
-                    reply = heal_llm_call(
-                        lambda: call_gemini(clean_hist, cfg["model"], cfg["api_key"], sys_txt, healed["use_search"]),
-                        [lambda: call_gemini(clean_hist, "gemini-2.5-flash", cfg["api_key"], sys_txt, False)],
-                        send_telegram_msg,
-                    )
+                    reply = heal_llm_call(lambda: call_gemini(clean_hist, cfg["model"], cfg["api_key"], sys_txt, healed["use_search"]), [lambda: call_gemini(clean_hist, "gemini-2.5-flash", cfg["api_key"], sys_txt, False)], send_telegram_msg)
                 else:
                     reply = heal_llm_call(lambda: call_openai(clean_hist, cfg["model"], cfg["api_key"], sys_txt), [], send_telegram_msg)
-
                 def _aud_llm(aud_sys, aud_usr):
                     ah = [{"role": "user", "content": aud_usr}]
                     return call_gemini(ah, cfg["model"], cfg["api_key"], aud_sys, False, temp=0.2) if cfg["provider"] == "gemini" else call_openai(ah, cfg["model"], cfg["api_key"], aud_sys, temp=0.2)
-
                 reply = jarvis_post_audit(reply, eff_faith, persona, group_mode, last_txt, FAITH_PROFILES, llm_rewrite_fn=(None if cfg["provider"] == "demo" else _aud_llm))
-
                 spoken_txt = None
                 m_sp = re.search(r"\[(?:SPOKEN|स्पोकन)\]([\s\S]*?)\[/(?:SPOKEN|स्पोकन)\]", reply, re.I)
                 if m_sp:
