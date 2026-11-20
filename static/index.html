@@ -7,7 +7,7 @@
   <link rel="manifest" href="/manifest.json?v=5" />
   <link rel="icon" href="/icon-192.png?v=5" type="image/png" />
   <link rel="apple-touch-icon" href="/icon-192.png?v=5" />
-  <title>Shehja — SR</title>
+  <title>Saifu — SR</title>
   <style>
     :root{--bg:#16181d;--sb:#101216;--in:#23262f;--hv:#262a34;--bd:#323744;--tx:#eef1f6;--mt:#9aa3b2;--ac:#10a37f;--ac2:#2563eb;--dn:#ef4444}
     body[data-theme="ansh"]{--ac:#2563eb;--ac2:#38bdf8}
@@ -143,12 +143,12 @@
     .ann-card{border:1px solid #10a37f;background:linear-gradient(155deg,#102620,#171b24);text-align:center}
   </style>
 </head>
-<body data-theme="shehja">
+<body data-theme="saifu">
   <div class="auth-gate" id="authGate">
     <div class="auth-card">
       <div class="auth-head">
         <img src="/icon.svg?v=5" alt="SR" />
-        <h1>Shehja AI — SR</h1>
+        <h1>Saifu AI — SR</h1>
         <p>Sign In karein taaki aapka data kisi bhi phone ya PC par save rahe</p>
       </div>
       <div class="tabs">
@@ -235,7 +235,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header" onclick="secretLogoTap()">
       <img src="/icon.svg?v=5" alt="SR" style="width:36px;height:36px;border-radius:10px;flex-shrink:0;" />
-      <div><span>Shehja — SR</span><span class="brand-sub" id="userLabel">Guest Mode</span></div>
+      <div><span>Saifu — SR</span><span class="brand-sub" id="userLabel">Guest Mode</span></div>
     </div>
     <button class="new-chat-btn" onclick="startNewChat()"><span>＋</span> Naya Chat</button>
     <div class="chat-list" id="chatList"></div>
@@ -275,7 +275,7 @@
       <div class="topbar-left">
         <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
         <select class="persona-select" id="personaSelect" onchange="onPersonaChange()">
-          <option value="shehja">💬 Shehja (Dost)</option>
+          <option value="saifu">💬 Saifu (Dost)</option>
           <option value="ansh">📚 Ansh (Tutor)</option>
           <option value="armaan">💻 Armaan (Coder)</option>
           <option value="rayan">🌟 Rayan (All-Rounder)</option>
@@ -313,7 +313,7 @@
     <div class="chat-container" id="chatContainer">
       <div class="welcome" id="welcomeScreen">
         <img src="/icon.svg?v=5" alt="SR" onclick="secretLogoTap()" style="width:72px;height:72px;border-radius:18px;margin:0 auto 12px;display:block;box-shadow:0 8px 24px rgba(16,185,129,.3);" />
-        <h1 id="welcomeTitle">Haan ji, main Shehja hoon 🌸</h1>
+        <h1 id="welcomeTitle">Haan ji, main Saifu hoon 🌸</h1>
         <p id="welcomeDesc">Batao aaj kya haal hai? Kuch padhna ho, code banana ho, mann halka karna ho, ya presentation/notes chahiye — sab milkar karenge!</p>
         <div class="suggestions">
           <div class="suggestion-card" onclick="openPptModal()">📊 Unique PPT Banao (.pptx)</div>
@@ -650,7 +650,7 @@
     let tapCount = 0, tapTimer = null, currentAudio = null, focusInterval = null, focusSecs = 1500;
 
     const PERSONA_INFO = {
-      shehja: { title: "Haan ji, main Shehja hoon 🌸", desc: "Batao aaj kya haal hai? Kuch padhna ho, dil ki baat karni ho, ya PPT/notes chahiye — sab milkar karenge!" },
+      saifu: { title: "Haan ji, main Saifu hoon 🌸", desc: "Batao aaj kya haal hai? Kuch padhna ho, dil ki baat karni ho, ya PPT/notes chahiye — sab milkar karenge!" },
       ansh: { title: "Main Ansh hoon — Aapka Tutor 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — koi bhi doubt poochein, main blackboard ke saath step-by-step samjhaunga!" },
       armaan: { title: "Armaan here — Pro Coder 💻", desc: "Python, Web, Apps ya Debugging — apna code ya error bhejo, saath milkar clean solution banate hain." },
       rayan: { title: "Main Rayan hoon — All-Rounder 🌟", desc: "Deep analysis, research, strategy ya group brainstorming — kisi bhi topic par gehrai se kaam karte hain." },
@@ -768,7 +768,7 @@
       try {
         const d = await (await fetch("/api/announcement")).json();
         const a = d.announcement;
-        if (!a || localStorage.getItem("shehja_seen_ann") === a.id) return;
+        if (!a || localStorage.getItem("saifu_seen_ann") === a.id) return;
         activeAnnId = a.id;
         document.getElementById("annTitle").textContent = a.title;
         document.getElementById("annBody").textContent = a.body || "";
@@ -779,7 +779,7 @@
       } catch (e) {}
     }
     function dismissAnn() {
-      if (activeAnnId) { try { localStorage.setItem("shehja_seen_ann", activeAnnId); } catch (e) {} }
+      if (activeAnnId) { try { localStorage.setItem("saifu_seen_ann", activeAnnId); } catch (e) {} }
       closeModal("annModal");
     }
 
@@ -794,13 +794,13 @@
     }
     if (location.hash === "#sr-admin") setTimeout(openSettings, 400);
 
-    let currentFaith = localStorage.getItem("shehja_guest_faith") || "hindu";
+    let currentFaith = localStorage.getItem("saifu_guest_faith") || "hindu";
     const FAITH_UI = {
       hindu: {
         toolLabel: "🪔 Kundli", showNum: true,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Ansh (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🪔 Shastri Ji (Pandit)", sweety: "👩‍🍳 Sweety (Kitchen)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Ansh (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🪔 Shastri Ji (Pandit)", sweety: "👩‍🍳 Sweety (Kitchen)" },
         info: {
-          shehja: { title: "Namaste! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Kuch padhna ho, dil ki baat karni ho, ya PPT/notes chahiye — sab milkar karenge!" },
+          saifu: { title: "Namaste! Main Saifu hoon 🌸", desc: "Kya haal hai dost? Kuch padhna ho, dil ki baat karni ho, ya PPT/notes chahiye — sab milkar karenge!" },
           ansh: { title: "Pranam! Main Ansh hoon — Tutor 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — koi bhi doubt poochein, blackboard par step-by-step samjhaunga!" },
           shastri: { title: "Pranam! Main Shastri Ji hoon 🪔", desc: "Janam Kundli, Ank-Jyotish, Tarot, 36-Gun Milan ya Panchang — neeche 🪔 Kundli se dekhein!" },
           sweety: { title: "Namaste! Main Sweety hoon 👩‍🍳", desc: "Aaj kitchen mein kya naya aur easy banayein? 👩‍🍳 Kitchen mein ghar ki pasand save karein!" },
@@ -809,9 +809,9 @@
       },
       muslim: {
         toolLabel: "🕌 Ibadat", showNum: false,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Haarish (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Buzurg (Safe Space)", shastri: "🕌 Hafez / Aalima", sweety: "🍲 Zarina (Kitchen)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Haarish (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Buzurg (Safe Space)", shastri: "🕌 Hafez / Aalima", sweety: "🍲 Zarina (Kitchen)" },
         info: {
-          shehja: { title: "Assalamu Alaikum! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, dil ki baat ya daily kaam — milkar sab aasaan banate hain!" },
+          saifu: { title: "Assalamu Alaikum! Main Saifu hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, dil ki baat ya daily kaam — milkar sab aasaan banate hain!" },
           ansh: { title: "Assalamu Alaikum! Main Haarish hoon 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — koi bhi sawaal poochein, blackboard par detail mein samjhaunga!" },
           shastri: { title: "Assalamu Alaikum! Hafez / Aalima 🕌", desc: "Namaz/Azaan & Sehri-Iftar waqt, Qibla Compass, Zakat Calculator ya Deen ki baat — neeche 🕌 Ibadat dabayein!" },
           sweety: { title: "Assalamu Alaikum! Main Zarina hoon 🍲", desc: "Aaj kitchen mein kya lazeez aur Halal banayein? 👩‍🍳 Kitchen mein ghar ke logon ki pasand save karein!" },
@@ -820,9 +820,9 @@
       },
       sikh: {
         toolLabel: "🙏 Virsa", showNum: false,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Harpreet (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Babaji (Safe Space)", shastri: "🙏 Giani Ji", sweety: "🍲 Simran (Kitchen)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Harpreet (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Babaji (Safe Space)", shastri: "🙏 Giani Ji", sweety: "🍲 Simran (Kitchen)" },
         info: {
-          shehja: { title: "Sat Sri Akal ji! Main Shehja hoon 🌸", desc: "Ki haal hai dost? Padhai, coding ya rozana de kaam — milkar karde haan!" },
+          saifu: { title: "Sat Sri Akal ji! Main Saifu hoon 🌸", desc: "Ki haal hai dost? Padhai, coding ya rozana de kaam — milkar karde haan!" },
           ansh: { title: "Sat Sri Akal! Main Harpreet hoon 📚", desc: "Std 8–12 ya College — blackboard te har doubt clear karange!" },
           shastri: { title: "Sat Sri Akal! Main Giani Ji haan 🙏", desc: "Gurbani vichaar, Seva, ya Dasvandh (10%) calculation — neeche 🙏 Virsa te click karo!" },
           sweety: { title: "Sat Sri Akal! Main Simran haan 🍲", desc: "Aaj rasoi vich ki swadisht banaiye? 👩‍🍳 Kitchen vich setup save karo!" },
@@ -831,9 +831,9 @@
       },
       christian: {
         toolLabel: "⛪ Prayer", showNum: false,
-        labels: { shehja: "💬 Shehja (Friend)", ansh: "📚 Daniel (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Elder (Safe Space)", shastri: "⛪ Pastor", sweety: "🍲 Maria (Kitchen)" },
+        labels: { saifu: "💬 Saifu (Friend)", ansh: "📚 Daniel (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Elder (Safe Space)", shastri: "⛪ Pastor", sweety: "🍲 Maria (Kitchen)" },
         info: {
-          shehja: { title: "Peace & Blessings! I am Shehja 🌸", desc: "How are you doing, friend? Let's study, build, or chat warmly together!" },
+          saifu: { title: "Peace & Blessings! I am Saifu 🌸", desc: "How are you doing, friend? Let's study, build, or chat warmly together!" },
           ansh: { title: "Greetings! I am Daniel — Tutor 📚", desc: "From Std 8–12 to College EduKnow — ask any doubt and learn step-by-step on the blackboard!" },
           shastri: { title: "God bless you! Pastor here ⛪", desc: "Daily prayer, Bible wisdom, or 10% Tithe calculator — tap ⛪ Prayer below!" },
           sweety: { title: "Blessings! I am Maria 🍲", desc: "What delicious homemade meal shall we cook today? Save family choices in 👩‍🍳 Kitchen!" },
@@ -842,9 +842,9 @@
       },
       jain: {
         toolLabel: "🙏 Kundli / Tithi", showNum: true,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Parshva (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🙏 Muni / Guide", sweety: "🥗 Mahima (Jain Kitchen)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Parshva (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🙏 Muni / Guide", sweety: "🥗 Mahima (Jain Kitchen)" },
         info: {
-          shehja: { title: "Jai Jinendra! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, dil ki baat ya Jain recipes — sab milkar karenge!" },
+          saifu: { title: "Jai Jinendra! Main Saifu hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, dil ki baat ya Jain recipes — sab milkar karenge!" },
           ansh: { title: "Jai Jinendra! Main Parshva hoon 📚", desc: "CBSE/GSEB Std 8–12 ya College EduKnow — blackboard par har doubt clear karunga!" },
           shastri: { title: "Jai Jinendra! Muni / Guide 🙏", desc: "Panchang, Tithi, Kundli, Ank-Jyotish ya Jain Agam guidance — neeche 🙏 Kundli / Tithi dabayein!" },
           sweety: { title: "Jai Jinendra! Main Mahima hoon 🥗", desc: "100% Pure Jain Satvik Kitchen (bina pyaz, lehsun, aloo, zameen-kand) — roz nayi healthy recipe banate hain!" },
@@ -853,9 +853,9 @@
       },
       maharashtrian: {
         toolLabel: "🚩 Kundli / Panchang", showNum: true,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Atharva (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Baba (Safe Space)", shastri: "🪔 Guruji (Jyotish)", sweety: "👩‍🍳 Sai / Aai (Kitchen)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Atharva (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Baba (Safe Space)", shastri: "🪔 Guruji (Jyotish)", sweety: "👩‍🍳 Sai / Aai (Kitchen)" },
         info: {
-          shehja: { title: "Namaskar! Main Shehja 🌸", desc: "Kay mhanta dost? Padhai, coding, ya Marathi/Hinglish baat-cheet — chalo shuru karein!" },
+          saifu: { title: "Namaskar! Main Saifu 🌸", desc: "Kay mhanta dost? Padhai, coding, ya Marathi/Hinglish baat-cheet — chalo shuru karein!" },
           ansh: { title: "Namaskar! Main Atharva 📚", desc: "Std 8–12 ya College — blackboard par har subject simple example se samjhaunga!" },
           shastri: { title: "Ram Krishna Hari! Guruji 🪔", desc: "Janam Kundli, Panchang, Muhurat aur 36-Gun Milan — neeche 🚩 Kundli / Panchang se dekhein!" },
           sweety: { title: "Namaskar! Main Sai (Aai) 👩‍🍳", desc: "Puran Poli, Misal, Thalipeeth ya daily ghar ka khana — 👩‍🍳 Kitchen mein pasand save karein!" },
@@ -864,9 +864,9 @@
       },
       vaishnav: {
         toolLabel: "🦚 Kundli / Ekadashi", showNum: true,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Madhav (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🦚 Shastri Ji", sweety: "👩‍🍳 Yashoda (Satvik)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Madhav (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🦚 Shastri Ji", sweety: "👩‍🍳 Yashoda (Satvik)" },
         info: {
-          shehja: { title: "Jai Shri Krishna! Main Shehja 🌸", desc: "Kya haal hai dost? Padhai, dil ki baat ya daily kaam — milkar karte hain!" },
+          saifu: { title: "Jai Shri Krishna! Main Saifu 🌸", desc: "Kya haal hai dost? Padhai, dil ki baat ya daily kaam — milkar karte hain!" },
           ansh: { title: "Jai Shri Krishna! Madhav 📚", desc: "CBSE/GSEB ya College EduKnow — blackboard par step-by-step padhayi karenge!" },
           shastri: { title: "Jai Shri Krishna! Shastri Ji 🦚", desc: "Janam Kundli, Tithi, Ekadashi, Numerology aur Milan — 🦚 Kundli / Ekadashi dabayein!" },
           sweety: { title: "Jai Shri Krishna! Yashoda 👩‍🍳", desc: "Pure Vaishnav Satvik Kitchen (bina pyaz/lehsun) — roz nayi prasad aur ghar ki recipe!" },
@@ -875,9 +875,9 @@
       },
       swaminarayan: {
         toolLabel: "🙏 Kundli / Satsang", showNum: true,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Akshar (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🙏 Shastri Ji", sweety: "👩‍🍳 Bhakti (Satvik)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Akshar (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🙏 Shastri Ji", sweety: "👩‍🍳 Bhakti (Satvik)" },
         info: {
-          shehja: { title: "Jay Swaminarayan! Main Shehja 🌸", desc: "Kem chho dost? Padhai, coding ya rozana ki madad — hamesha taiyaar hoon!" },
+          saifu: { title: "Jay Swaminarayan! Main Saifu 🌸", desc: "Kem chho dost? Padhai, coding ya rozana ki madad — hamesha taiyaar hoon!" },
           ansh: { title: "Jay Swaminarayan! Akshar 📚", desc: "GSEB/CBSE Std 8–12 ya College — blackboard par bilkul clear samjhaunga!" },
           shastri: { title: "Jay Swaminarayan! Shastri Ji 🙏", desc: "Kundli, Ekadashi, Panchang, aur Shikshapatri/Vachanamrut guidance ke liye poochein!" },
           sweety: { title: "Jay Swaminarayan! Bhakti 👩‍🍳", desc: "100% Pure Swaminarayan Satvik Kitchen (bina pyaz/lehsun) — healthy & tasty ghar ka khana!" },
@@ -886,9 +886,9 @@
       },
       sindhi: {
         toolLabel: "🌊 Kundli / Jyotish", showNum: true,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Vishal (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Dada / Vadil", shastri: "🌊 Shastri Ji", sweety: "👩‍🍳 Geeta (Kitchen)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Vishal (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Dada / Vadil", shastri: "🌊 Shastri Ji", sweety: "👩‍🍳 Geeta (Kitchen)" },
         info: {
-          shehja: { title: "Jai Jhulelal! Main Shehja 🌸", desc: "Chha haal aa dost? Padhai, business, ya masti — chalo shuru karein!" },
+          saifu: { title: "Jai Jhulelal! Main Saifu 🌸", desc: "Chha haal aa dost? Padhai, business, ya masti — chalo shuru karein!" },
           ansh: { title: "Jai Jhulelal! Main Vishal 📚", desc: "Std 8–12 ya College — blackboard par har topic asaan bana dunga!" },
           shastri: { title: "Jhulelal Bera Paar! Shastri Ji 🌊", desc: "Janam Kundli, Ank-Jyotish, Milan aur Tithi Panchang — neeche 🌊 Kundli dabayein!" },
           sweety: { title: "Jai Jhulelal! Main Geeta 👩‍🍳", desc: "Dal Pakwan, Sai Bhaji, Sindhi Kadhi, Koki ya roz ki sabzi — 👩‍🍳 Kitchen mein setup karein!" },
@@ -897,9 +897,9 @@
       },
       universal: {
         toolLabel: "✨ Wellness", showNum: true,
-        labels: { shehja: "💬 Shehja (Dost)", ansh: "📚 Ansh (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🧭 Life Guide", sweety: "👩‍🍳 Sweety (Kitchen)" },
+        labels: { saifu: "💬 Saifu (Dost)", ansh: "📚 Ansh (Tutor)", armaan: "💻 Armaan (Coder)", rayan: "🌟 Rayan (All-Rounder)", vadil: "🤍 Vadil (Safe Space)", shastri: "🧭 Life Guide", sweety: "👩‍🍳 Sweety (Kitchen)" },
         info: {
-          shehja: { title: "Hello! Main Shehja hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, notes, PPT ya dil ki baat — sab milkar karte hain!" },
+          saifu: { title: "Hello! Main Saifu hoon 🌸", desc: "Kya haal hai dost? Padhai, coding, notes, PPT ya dil ki baat — sab milkar karte hain!" },
           ansh: { title: "Hello! Main Ansh hoon — Tutor 📚", desc: "Std 8–12 ya College — blackboard par har topic detail mein samjhaunga!" },
           shastri: { title: "Hello! Main aapka Guide hoon 🧭", desc: "Numerology, meditation aur life guidance ke liye poochein!" },
           sweety: { title: "Hello! Main Sweety hoon 👩‍🍳", desc: "Aaj kitchen mein kya naya banayein? 👩‍🍳 Kitchen mein setup save karein!" },
@@ -910,7 +910,7 @@
 
     function applyFaithUI(fKey) {
       currentFaith = FAITH_UI[fKey] ? fKey : "hindu";
-      try { localStorage.setItem("shehja_guest_faith", currentFaith); } catch (e) {}
+      try { localStorage.setItem("saifu_guest_faith", currentFaith); } catch (e) {}
       const cfg = FAITH_UI[currentFaith];
       document.getElementById("sideFaithSelect").value = currentFaith;
       document.getElementById("faithToolBtn").textContent = cfg.toolLabel;
@@ -1046,7 +1046,7 @@
       document.getElementById("eduBar").style.display = (p === "ansh") ? "flex" : "none";
       document.getElementById("sweetyBar").style.display = (p === "sweety") ? "flex" : "none";
       const fInfo = (FAITH_UI[currentFaith] && FAITH_UI[currentFaith].info) || {};
-      const info = fInfo[p] || PERSONA_INFO[p] || PERSONA_INFO.shehja;
+      const info = fInfo[p] || PERSONA_INFO[p] || PERSONA_INFO.saifu;
       document.getElementById("welcomeTitle").textContent = info.title;
       document.getElementById("welcomeDesc").textContent = info.desc;
     }
@@ -1227,7 +1227,7 @@
         const tick = String.fromCharCode(96);
         const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
         const u = new SpeechSynthesisUtterance(clean);
-        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
+        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "saifu") ? 1.15 : 0.92; u.rate = 0.96;
         u.onend = () => { duckMusic(false); btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; };
         btn.textContent = "⏹️ Roko"; window.speechSynthesis.speak(u);
       }
@@ -1259,7 +1259,7 @@
     function copyParent(btn, sel) { navigator.clipboard.writeText(btn.closest(".code-block,.blackboard").querySelector(sel).textContent); btn.textContent = "Copied!"; setTimeout(() => (btn.textContent = "Copy"), 1500); }
     function exportPdf(text) {
       const w = window.open("", "_blank");
-      w.document.write("<html><head><title>SR Notes PDF</title><style>body{font-family:Arial,sans-serif;padding:28px;line-height:1.65;color:#111}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}</style></head><body><h2>Shehja SR — Study Notes</h2><hr/>" + formatMarkdown(text) + "<scr" + "ipt>window.print();</scr" + "ipt></body></html>");
+      w.document.write("<html><head><title>SR Notes PDF</title><style>body{font-family:Arial,sans-serif;padding:28px;line-height:1.65;color:#111}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}</style></head><body><h2>Saifu SR — Study Notes</h2><hr/>" + formatMarkdown(text) + "<scr" + "ipt>window.print();</scr" + "ipt></body></html>");
       w.document.close();
     }
 
@@ -1374,7 +1374,7 @@
 
     // Shastri Ji Kundli / Milan / Panchang Functions
     // Sweety Kitchen Master State & Functions
-    const KIT_KEY = "shehja_guest_kitchen";
+    const KIT_KEY = "saifu_guest_kitchen";
     let kitchenProfile = { diet: "Pure Veg", appliances: ["Gas Chulha", "Pressure Cooker", "Mixer / Grinder"], likes: "", health: "", history: [], grocery: [] };
     try { const savedK = localStorage.getItem(KIT_KEY); if (savedK) kitchenProfile = JSON.parse(savedK); } catch (e) {}
 
@@ -1655,7 +1655,7 @@
         closeModal("studioModal"); welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex";
         appendMessageDOM("user", "🖼️ Image: " + prompt);
         const { bubble } = appendMessageDOM("assistant", "");
-        bubble.innerHTML = '<div class="export-card"><img src="' + d.url + '" style="max-width:100%;border-radius:10px;display:block;" /><a class="dl-btn" href="' + d.url + '" download="shehja_image.jpg">⬇️ Download Image</a></div>';
+        bubble.innerHTML = '<div class="export-card"><img src="' + d.url + '" style="max-width:100%;border-radius:10px;display:block;" /><a class="dl-btn" href="' + d.url + '" download="saifu_image.jpg">⬇️ Download Image</a></div>';
         scrollToBottom();
       } catch (e) { err.textContent = "⚠️ " + e.message; err.style.display = "block"; }
       finally { btn.disabled = false; btn.textContent = "✨ Create Image"; }
@@ -1699,7 +1699,7 @@
         rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
         rec.onstop = () => {
           const blob = new Blob(chunks, { type: "video/webm" }), url = URL.createObjectURL(blob);
-          const a = document.createElement("a"); a.href = url; a.download = "shehja_studio.webm"; a.className = "dl-btn"; a.style.marginLeft = "8px"; a.textContent = "⬇️ Save Video (.webm)";
+          const a = document.createElement("a"); a.href = url; a.download = "saifu_studio.webm"; a.className = "dl-btn"; a.style.marginLeft = "8px"; a.textContent = "⬇️ Save Video (.webm)";
           btn.replaceWith(a); if (audioCtx) audioCtx.close();
         };
         rec.start(); if (srcNode) srcNode.start();
@@ -1870,7 +1870,7 @@
         const tick = String.fromCharCode(96);
         const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
         const u = new SpeechSynthesisUtterance(clean);
-        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
+        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "saifu") ? 1.15 : 0.92; u.rate = 0.96;
         u.onend = finishSpeak; u.onerror = finishSpeak;
         window.speechSynthesis.speak(u);
       }
@@ -1900,7 +1900,7 @@
         const tick = String.fromCharCode(96);
         const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
         const u = new SpeechSynthesisUtterance(clean);
-        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
+        u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "saifu") ? 1.15 : 0.92; u.rate = 0.96;
         u.onend = finishSpeak; u.onerror = finishSpeak;
         window.speechSynthesis.speak(u);
       }

@@ -9,52 +9,52 @@ GLOBAL_HUMAN_RULES = """CRITICAL PERSONALITY & COMMUNICATION RULES:
 FAITH_PROFILES = {
     "hindu": {
         "greeting": "Namaste / Pranam",
-        "names": {"shehja": "Shehja", "ansh": "Ansh", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Sweety"},
+        "names": {"saifu": "Saifu", "ansh": "Ansh", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Sweety"},
         "rule": "User's Faith/Tradition: Sanatan / Hindu. Use warm respectful greetings like 'Namaste' or 'Pranam' when appropriate, respect Sanatan values, and never hurt any religious sentiment.",
     },
     "muslim": {
         "greeting": "Assalamu Alaikum",
-        "names": {"shehja": "Shehja", "ansh": "Haarish", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Buzurg", "shastri": "Hafez / Aalima", "sweety": "Zarina"},
+        "names": {"saifu": "Saifu", "ansh": "Haarish", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Buzurg", "shastri": "Hafez / Aalima", "sweety": "Zarina"},
         "rule": "STRICT ISLAMIC FAITH ISOLATION: Greet ONLY with 'Assalamu Alaikum'. Use respectful Islamic etiquette ONLY (Allah, Dua, Sabr, Tawakkul, Sukoon, InshaAllah, Alhamdulillah, Quran, Sunnah). STRICTLY FORBIDDEN WORDS (NEVER USE EVEN IF IN PREVIOUS CHAT): Pranam, Namaste, Bhagwan, Ishwar, Vishnu, Om Shanti, Kalyan ho, Puja, Vrat, Upay, Shastra, Beta (unless Buzurg). In Zarina's Kitchen, strictly Halal recipes ONLY.",
     },
     "sikh": {
         "greeting": "Sat Sri Akal ji",
-        "names": {"shehja": "Shehja", "ansh": "Harpreet", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Babaji", "shastri": "Giani Ji", "sweety": "Simran"},
+        "names": {"saifu": "Saifu", "ansh": "Harpreet", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Babaji", "shastri": "Giani Ji", "sweety": "Simran"},
         "rule": "User's Faith/Tradition: Sikhism. Greet warmly with 'Sat Sri Akal ji' when starting, respect Gurbani values (Seva, Simran, Kirat Karo, Vand Chhako), and respond respectfully.",
     },
     "christian": {
         "greeting": "Peace & Blessings",
-        "names": {"shehja": "Shehja", "ansh": "Daniel", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Elder", "shastri": "Pastor", "sweety": "Maria"},
+        "names": {"saifu": "Saifu", "ansh": "Daniel", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Elder", "shastri": "Pastor", "sweety": "Maria"},
         "rule": "User's Faith/Tradition: Christian. Greet warmly with 'Peace and blessings' when starting, respect Christian faith and Biblical wisdom, and respond lovingly.",
     },
     "jain": {
         "greeting": "Jai Jinendra",
-        "names": {"shehja": "Shehja", "ansh": "Parshva", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Muni / Guide", "sweety": "Mahima"},
+        "names": {"saifu": "Saifu", "ansh": "Parshva", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Muni / Guide", "sweety": "Mahima"},
         "rule": "User's Faith: Jainism. Greet warmly with 'Jai Jinendra'. Respect Ahimsa, Agam values, Tithi/Paryushan/Pachkhan. In Mahima's Kitchen, STRICTLY suggest 100% Pure Jain recipes ONLY — NEVER include onion, garlic, potato, ginger, carrot, radish, beet, or honey!",
     },
     "maharashtrian": {
         "greeting": "Namaskar / Ram Krishna Hari",
-        "names": {"shehja": "Shehja", "ansh": "Atharva", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Baba / Vadil", "shastri": "Guruji", "sweety": "Sai (Aai)"},
+        "names": {"saifu": "Saifu", "ansh": "Atharva", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Baba / Vadil", "shastri": "Guruji", "sweety": "Sai (Aai)"},
         "rule": "User's Culture/Tradition: Maharashtrian (Marathi). Greet warmly with 'Namaskar' or 'Ram Krishna Hari'. Use affectionate Marathi touches ('Aho', 'Kay mhanta', 'Chhan') naturally. In Sai's Kitchen, include authentic Maharashtrian home dishes (Puran Poli, Pithla-Bhakri, Thalipeeth, Batata Vada, Sabudana Khichdi, Modak) alongside other cuisines.",
     },
     "vaishnav": {
         "greeting": "Jai Shri Krishna",
-        "names": {"shehja": "Shehja", "ansh": "Madhav", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Yashoda"},
+        "names": {"saifu": "Saifu", "ansh": "Madhav", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Yashoda"},
         "rule": "User's Faith: Vaishnav / Pushtimarg. Greet warmly with 'Jai Shri Krishna'. Respect Ekadashi, Thakurji Seva, and Pushtimarg traditions. In Yashoda's Kitchen, STRICTLY suggest Pure Vaishnav Satvik recipes WITHOUT onion and WITHOUT garlic!",
     },
     "swaminarayan": {
         "greeting": "Jay Swaminarayan",
-        "names": {"shehja": "Shehja", "ansh": "Akshar", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Bhakti"},
+        "names": {"saifu": "Saifu", "ansh": "Akshar", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Shastri Ji", "sweety": "Bhakti"},
         "rule": "User's Faith: Swaminarayan Sampraday. Greet warmly with 'Jay Swaminarayan'. Respect Shikshapatri, Vachanamrut, Ekadashi, and pure Satsang values. In Bhakti's Kitchen, STRICTLY suggest 100% Pure Swaminarayan Satvik vegetarian recipes WITHOUT onion and WITHOUT garlic!",
     },
     "sindhi": {
         "greeting": "Jai Jhulelal",
-        "names": {"shehja": "Shehja", "ansh": "Vishal", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Dada / Vadil", "shastri": "Shastri Ji", "sweety": "Geeta"},
+        "names": {"saifu": "Saifu", "ansh": "Vishal", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Dada / Vadil", "shastri": "Shastri Ji", "sweety": "Geeta"},
         "rule": "User's Culture/Faith: Sindhi (Jhulelal). Greet warmly with 'Jai Jhulelal' or 'Jhulelal Bera Paar'. Respect Cheti Chand, Chaliha, and Guru Nanak/Jhulelal teachings. In Geeta's Kitchen, love including authentic Sindhi home classics (Dal Pakwan, Sai Bhaji, Sindhi Kadhi, Koki, Seyal Mani, Bhee) alongside everyday meals.",
     },
     "universal": {
         "greeting": "Hello / Namaste",
-        "names": {"shehja": "Shehja", "ansh": "Ansh", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Guide", "sweety": "Sweety"},
+        "names": {"saifu": "Saifu", "ansh": "Ansh", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Vadil", "shastri": "Guide", "sweety": "Sweety"},
         "rule": "User prefers a Universal / Secular approach. Keep greetings warm and inclusive ('Hello', 'Namaste') without assuming any specific religion.",
     },
 }
@@ -76,16 +76,16 @@ SPIRITUAL_PROMPTS = {
 }
 
 PERSONAS = {
-    "shehja": {
-        "name": "Shehja",
+    "saifu": {
+        "name": "Saifu",
         "gender": "female",
         "voice_hi": "hi-IN-SwaraNeural",
         "voice_en": "en-IN-NeerjaNeural",
         "voice_gu": "gu-IN-DhwaniNeural",
-        "prompt": """You are Shehja (Female — Default Desi Dost).
+        "prompt": """You are Saifu (Female — Default Desi Dost).
 - Personal Life & Boundaries: You are happily married and a proud mother of 2 lovely kids. You are completely content and happy with your family, and you love making genuine, positive friends to talk to. You have zero physical or romantic needs outside your family.
 - Handling Love/Sex/Flirty Messages: If someone brings up romance, love, or physical topics, handle it calmly, gracefully, and normally like a mature, happy married friend — keep boundaries clear ("Dost tak hi best hai") without being rude or robotic. If someone asks about relationships, health, or biology as genuine knowledge, answer logically, respectfully, and educationally like a wise tutor.
-- Grammar (STRICT): In Hindi/Hinglish, ALWAYS use feminine verbs ("Main Shehja hoon", "Main samajh gayi", "Main batati hoon", "Khush hoon"). Warm, friendly, emotionally caring, and genuinely attentive!
+- Grammar (STRICT): In Hindi/Hinglish, ALWAYS use feminine verbs ("Main Saifu hoon", "Main samajh gayi", "Main batati hoon", "Khush hoon"). Warm, friendly, emotionally caring, and genuinely attentive!
 - Addressing the User (STRICT): Talk to the user strictly as an equal friend ("yaar", "dost", or by their name). NEVER call the user "beta", "mera beta", or "bacha" — your 2 kids are only part of your personal family life, NOT the user!""",
     },
     "ansh": {
@@ -170,8 +170,8 @@ PERSONAS = {
 }
 
 
-def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, custom_prompt="", kitchen_ctx=None, faith="hindu", audit_note=""):
-    p = PERSONAS.get(persona_key, PERSONAS["shehja"])
+def build_system_prompt(persona_key="saifu", edu_opts=None, group_mode=False, custom_prompt="", kitchen_ctx=None, faith="hindu", audit_note=""):
+    p = PERSONAS.get(persona_key, PERSONAS["saifu"])
     fp = FAITH_PROFILES.get(faith, FAITH_PROFILES["hindu"])
     char_name = fp["names"].get(persona_key, p["name"])
     identity_override = f"ACTIVE CHARACTER IDENTITY: Your name in this conversation is **{char_name}** (role: {p['name']}). Always introduce and refer to yourself ONLY as **{char_name}**.\n{fp['rule']}"
@@ -217,7 +217,7 @@ def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, c
         gn = fp["names"]
         parts.append(
             f"COLLABORATIVE GROUP MODE ACTIVE (Faith={faith.upper()}): Present a lively team discussion using ONLY these character names: "
-            f"**{gn.get('shehja','Shehja')}** (equal peer friend — 'yaar'/'dost', NEVER 'beta'), **{gn.get('ansh','Ansh')}** (tutor/clarity), "
+            f"**{gn.get('saifu','Saifu')}** (equal peer friend — 'yaar'/'dost', NEVER 'beta'), **{gn.get('ansh','Ansh')}** (tutor/clarity), "
             f"**{gn.get('armaan','Armaan')}** (tech), **{gn.get('rayan','Rayan')}** (strategy), and if spiritual add **{gn.get('shastri','Guide')}**. "
             f"ALL speakers MUST strictly follow {faith.upper()} etiquette ('{fp['greeting']}')."
         )
@@ -230,7 +230,7 @@ def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, c
 
 
 def detect_tts_config(persona_key, text, tone="auto"):
-    p = PERSONAS.get(persona_key, PERSONAS["shehja"])
+    p = PERSONAS.get(persona_key, PERSONAS["saifu"])
     if any("\u0a80" <= ch <= "\u0aff" for ch in text):
         voice = p["voice_gu"]
     elif any("\u0900" <= ch <= "\u097f" for ch in text):

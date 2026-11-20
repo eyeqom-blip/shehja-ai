@@ -3,13 +3,13 @@ import os, json, time, uuid, urllib.request
 _TG_MENU_SET = False
 
 CHEAT_SHEET = (
-    "🤖 <b>Shehja SR — Dev Cheat Code Sheet</b>\n\n"
+    "🤖 <b>Saifu SR — Dev Cheat Code Sheet</b>\n\n"
     "📊 /stats — Live Users, Chats, Msgs, DB &amp; Uptime\n"
     "🛠️ /heal — Jarvis Self-Healer Bug Report\n"
     "🧹 /clearad — App ka Popup Hide karein\n"
     "📖 /help — Yeh Cheat Code Sheet dubara dekhein\n\n"
     "📢 <b>Update / Download Popup Bhejne Ke Liye:</b>\n"
-    "<code>/ad New Update! | Naya version live hai | https://shehja.sarahics.in</code>\n\n"
+    "<code>/ad New Update! | Naya version live hai | https://saifu.sarahics.in</code>\n\n"
     "⏰ <b>Auto Reports:</b>\n"
     "• Subah 9:00 AM IST daily user report\n"
     "• Critical error par instant Self-Healer alert"
@@ -57,10 +57,10 @@ def collect_stats(db_exec, use_pg, start_time, cfg, get_heal_stats):
         "model": cfg.get("model", ""), "healed_24h": hs["healed_24h"], "total_healed": hs["total_healed"], "last_bug": hs["last_bug"],
     }
 
-def format_stats(st, prefix="📊 <b>Shehja SR Live Stats</b>"):
+def format_stats(st, prefix="📊 <b>Saifu SR Live Stats</b>"):
     hrs, mins = st["uptime_sec"] // 3600, (st["uptime_sec"] % 3600) // 60
     return (
-        f"{prefix}\n🌐 <b>shehja.sarahics.in</b>\n"
+        f"{prefix}\n🌐 <b>saifu.sarahics.in</b>\n"
         f"👥 Users: <b>{st['users']}</b> (+{st['new_users_24h']} last 24h)\n"
         f"💬 Chats: <b>{st['chats']}</b> | ✉️ Msgs: <b>{st['messages']}</b>\n"
         f"🔔 Push Alerts: <b>{st['push_subs']}</b> | 📢 Popup: <b>{st['active_ad']}</b>\n"

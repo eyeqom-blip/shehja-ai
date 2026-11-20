@@ -83,7 +83,7 @@ def build_caring_message(slot, faith, user_name, is_fasting=False):
 
     if slot == "morning":
         return (
-            f"🌸 Shehja (Dost)",
+            f"🌸 Saifu (Dost)",
             f"{greet} {nm}! Naya din shuru ho gaya hai — aaj ka din khushiyon aur kamyabi se bhara rahe. Yaad rakhna, main hamesha saath hoon!",
         )
 

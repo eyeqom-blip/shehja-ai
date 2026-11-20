@@ -36,7 +36,7 @@ except Exception:
 START_TIME = int(time.time())
 PORT = int(os.environ.get("PORT", 8080))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "shehja.db")
+DB_PATH = os.path.join(BASE_DIR, "saifu.db")
 INDEX_PATH = os.path.join(BASE_DIR, "static", "index.html")
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 USE_PG = bool(DATABASE_URL)
@@ -123,7 +123,7 @@ def init_db():
     def_prov = os.environ.get("AI_PROVIDER") or ("gemini" if os.environ.get("GEMINI_API_KEY") else ("openai" if os.environ.get("OPENAI_API_KEY") else "demo"))
     defaults = {
         "provider": def_prov, "model": os.environ.get("AI_MODEL", "gemini-3.5-flash-lite"),
-        "api_key": env_key, "admin_pin": os.environ.get("SHEHJA_PIN", "1234"),
+        "api_key": env_key, "admin_pin": os.environ.get("SAIFU_PIN", "1234"),
         "custom_prompt": os.environ.get("CUSTOM_PROMPT", ""),
     }
     try:
@@ -228,7 +228,7 @@ def get_config():
     cfg = {k: v for k, v in rows}
     return {
         "provider": cfg.get("provider", "demo"), "model": (os.environ.get("AI_MODEL") or ("gemini-3.5-flash-lite" if cfg.get("model") == "gemini-3.8-flash" else cfg.get("model", "gemini-3.5-flash-lite"))),
-        "api_key": cfg.get("api_key", ""), "admin_pin": cfg.get("admin_pin") or os.environ.get("SHEHJA_PIN", "1234"),
+        "api_key": cfg.get("api_key", ""), "admin_pin": cfg.get("admin_pin") or os.environ.get("SAIFU_PIN", "1234"),
         "custom_prompt": cfg.get("custom_prompt", ""),
     }
 
@@ -253,8 +253,8 @@ def send_otp_email(to_email, otp_code):
     if not sender or not pw:
         raise RuntimeError("Email OTP setup nahi hai. Security Question option use karein!")
     msg = EmailMessage()
-    msg["Subject"] = f"Shehja SR — Password Reset OTP: {otp_code}"
-    msg["From"] = f"Shehja SR <{sender}>"
+    msg["Subject"] = f"Saifu SR — Password Reset OTP: {otp_code}"
+    msg["From"] = f"Saifu SR <{sender}>"
     msg["To"] = to_email
     msg.set_content(f"Namaste!\n\nAapka Password Reset OTP hai: {otp_code}\nYeh 10 minute tak valid hai.")
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as smtp:
@@ -356,9 +356,9 @@ def synth_sarvam_audio(text, persona_key, tone="auto", spoken_override=None):
     is_emotional = any(w in low for w in ("sorry", "sad", "udaas", "dukhi", "akela", "chinta", "tension", "beta", "himmat", "pyaar", "dil", "fikar", "ro", "mushkil"))
     is_happy = any(w in low for w in ("mubarak", "congrats", "awesome", "great", "wah", "haha", "mazaa", "khush", "shabaash"))
 
-    if tone in ("priya", "simran", "ritu", "kavya") and persona_key == "shehja":
+    if tone in ("priya", "simran", "ritu", "kavya") and persona_key == "saifu":
         sp3 = tone
-    elif persona_key == "shehja":
+    elif persona_key == "saifu":
         sp3 = "simran" if is_emotional else ("kavya" if is_happy else "priya")
     elif persona_key in ("vadil", "shastri"):
         sp3 = "ashutosh"
@@ -378,7 +378,7 @@ def synth_sarvam_audio(text, persona_key, tone="auto", spoken_override=None):
     else:
         pace, temp = 0.96, 0.65
 
-    sp2 = "anushka" if persona_key == "shehja" else "karun"
+    sp2 = "anushka" if persona_key == "saifu" else "karun"
     attempts = [
         ({"text": clean[:2400], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "temperature": temp, "speech_sample_rate": 22050, "output_audio_codec": "mp3", "enable_preprocessing": True}, "audio/mpeg"),
         ({"text": clean[:2400], "target_language_code": lang, "model": "bulbul:v3", "speaker": sp3, "pace": pace, "temperature": temp, "speech_sample_rate": 22050, "enable_preprocessing": True}, "audio/wav"),
@@ -421,7 +421,7 @@ def synth_neural_mp3(text, persona_key, tone="auto"):
     return asyncio.run(_tts_async(clean[:2500], voice, rate, pitch))
 
 
-def call_demo(user_text, persona="shehja", faith="hindu"):
+def call_demo(user_text, persona="saifu", faith="hindu"):
     time.sleep(0.25)
     q = user_text.lower()
     if any(w in q for w in ("contact", "mail", "email", "owner", "kisne banaya")):
@@ -548,7 +548,7 @@ def call_llm_json(cfg, prompt, sys_txt, temp=0.85):
 
 
 MANIFEST_JSON = json.dumps({
-    "id": "/?sr=v5", "name": "Shehja — SR", "short_name": "SR", "start_url": "/?sr=v5", "display": "standalone",
+    "id": "/?sr=v5", "name": "Saifu — SR", "short_name": "SR", "start_url": "/?sr=v5", "display": "standalone",
     "background_color": "#060913", "theme_color": "#10a37f",
     "icons": [
         {"src": "/icon-192.png?v=5", "sizes": "192x192", "type": "image/png", "purpose": "any"},
@@ -559,7 +559,7 @@ MANIFEST_JSON = json.dumps({
 SW_JS = """
 self.addEventListener('fetch', function(e) {});
 self.addEventListener('push', function(event) {
-  var data = { title: 'Shehja — SR', body: 'Aapke liye ek pyaara message hai!', url: '/?sr=v5' };
+  var data = { title: 'Saifu — SR', body: 'Aapke liye ek pyaara message hai!', url: '/?sr=v5' };
   try { if (event.data) data = Object.assign(data, event.data.json()); } catch (e) {}
   event.waitUntil(
     self.registration.showNotification(data.title, {
@@ -577,7 +577,7 @@ self.addEventListener('notificationclick', function(event) {
 """
 
 
-class ShehjaHandler(BaseHTTPRequestHandler):
+class SaifuHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
@@ -587,7 +587,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             c.load(self.headers.get("Cookie", ""))
         except Exception:
             return None
-        tok = c["shehja_token"].value if "shehja_token" in c else ""
+        tok = c["saifu_token"].value if "saifu_token" in c else ""
         if not tok:
             return None
         row = db_exec("SELECT u.id, u.name, u.email, COALESCE(u.faith, 'hindu') FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?", (tok,), fetch="one")
@@ -688,7 +688,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             chats = db_exec("SELECT id, user_id, title, updated_at FROM user_chats", fetch="all") or []
             msgs = db_exec("SELECT id, chat_id, seq, role, content, created_at FROM user_messages", fetch="all") or []
             bk = json.dumps({"users": users, "chats": chats, "messages": msgs}, default=str).encode("utf-8")
-            self.send_bytes(200, "application/json", bk, {"Content-Disposition": 'attachment; filename="shehja_backup.json"'})
+            self.send_bytes(200, "application/json", bk, {"Content-Disposition": 'attachment; filename="saifu_backup.json"'})
         elif path == "/api/kitchen":
             u = self.get_session_user()
             self.send_json(200, get_kitchen_profile(u["id"] if u else None))
@@ -770,7 +770,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 faith = (u["faith"] if u else d.get("faith")) or "hindu"
                 uname = (u["name"] if u else d.get("name")) or "Dost"
                 slot = d.get("slot") or "morning"
-                msg = build_caring_message(slot, faith, uname, bool(d.get("is_fasting"))) or ("🌸 Shehja", "Daily Care Notifications ON ho gayi hain!")
+                msg = build_caring_message(slot, faith, uname, bool(d.get("is_fasting"))) or ("🌸 Saifu", "Daily Care Notifications ON ho gayi hain!")
                 ok, st = send_push_one(sub, msg[0], msg[1], priv)
                 if not ok:
                     self.send_json(500, {"error": st})
@@ -819,7 +819,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
             faith = (d.get("faith") or "hindu").strip().lower()
             db_exec("INSERT INTO users (id, name, email, pass_hash, sec_q, sec_a_hash, created_at, faith) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (uid, name, email, hash_secret(pw), sec_q, hash_secret(sec_a), now, faith))
             db_exec("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)", (tok, uid, now))
-            self.send_json(200, {"user": {"id": uid, "name": name, "email": email, "faith": faith}}, {"Set-Cookie": f"shehja_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
+            self.send_json(200, {"user": {"id": uid, "name": name, "email": email, "faith": faith}}, {"Set-Cookie": f"saifu_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
             return
 
         if path == "/api/auth/login":
@@ -831,18 +831,18 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 return
             tok = uuid.uuid4().hex + uuid.uuid4().hex
             db_exec("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)", (tok, row[0], int(time.time())))
-            self.send_json(200, {"user": {"id": row[0], "name": row[1], "email": row[2], "faith": row[4]}}, {"Set-Cookie": f"shehja_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
+            self.send_json(200, {"user": {"id": row[0], "name": row[1], "email": row[2], "faith": row[4]}}, {"Set-Cookie": f"saifu_token={tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"})
             return
 
         if path == "/api/auth/logout":
             c = http.cookies.SimpleCookie()
             try:
                 c.load(self.headers.get("Cookie", ""))
-                if "shehja_token" in c:
-                    db_exec("DELETE FROM sessions WHERE token = ?", (c["shehja_token"].value,))
+                if "saifu_token" in c:
+                    db_exec("DELETE FROM sessions WHERE token = ?", (c["saifu_token"].value,))
             except Exception:
                 pass
-            self.send_json(200, {"ok": True}, {"Set-Cookie": "shehja_token=; Path=/; HttpOnly; Max-Age=0"})
+            self.send_json(200, {"ok": True}, {"Set-Cookie": "saifu_token=; Path=/; HttpOnly; Max-Age=0"})
             return
 
         if path == "/api/auth/forgot-question":
@@ -1030,7 +1030,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
         if path == "/api/tts":
             try:
                 d = self.read_json()
-                txt, per, tn = d.get("text") or "", d.get("persona", "shehja"), d.get("tone", "auto")
+                txt, per, tn = d.get("text") or "", d.get("persona", "saifu"), d.get("tone", "auto")
                 aud, mime, s_err = None, None, "no_key"
                 if os.environ.get("SARVAM_API_KEY", "").strip():
                     try:
@@ -1085,7 +1085,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     x_data = call_llm_json(cfg, p, "Output ONLY strict valid JSON for a spreadsheet.", temp=0.4)
                 raw = build_xlsx_bytes(x_data.get("title", "Sheet1"), x_data.get("headers", ["A"]), x_data.get("rows", []))
                 xid = uuid.uuid4().hex[:12]
-                fname = (re.sub(r"[^a-zA-Z0-9_-]+", "_", topic)[:28] or "Shehja_Sheet") + ".xlsx"
+                fname = (re.sub(r"[^a-zA-Z0-9_-]+", "_", topic)[:28] or "Saifu_Sheet") + ".xlsx"
                 if len(_XLSX_CACHE) >= 20:
                     _XLSX_CACHE.pop(next(iter(_XLSX_CACHE)))
                 _XLSX_CACHE[xid] = (fname, raw)
@@ -1109,7 +1109,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     ppt_data = call_llm_json(cfg, p, "Expert educator & presentation designer. Output ONLY strict JSON.", temp=0.9)
                 raw, used_theme = build_pptx_bytes(ppt_data, d.get("theme", "auto"))
                 pid = uuid.uuid4().hex[:12]
-                fname = (re.sub(r"[^a-zA-Z0-9_-]+", "_", topic)[:28] or "Shehja_PPT") + "_SR.pptx"
+                fname = (re.sub(r"[^a-zA-Z0-9_-]+", "_", topic)[:28] or "Saifu_PPT") + "_SR.pptx"
                 if len(_PPT_CACHE) >= 20:
                     _PPT_CACHE.pop(next(iter(_PPT_CACHE)))
                 _PPT_CACHE[pid] = (fname, raw)
@@ -1232,5 +1232,5 @@ class ShehjaHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     init_db()
-    print(f"Shehja SR Studio Server ({'Neon PG' if USE_PG else 'SQLite'}) chal raha hai: http://localhost:{PORT}")
-    ThreadingHTTPServer(("0.0.0.0", PORT), ShehjaHandler).serve_forever()
+    print(f"Saifu SR Studio Server ({'Neon PG' if USE_PG else 'SQLite'}) chal raha hai: http://localhost:{PORT}")
+    ThreadingHTTPServer(("0.0.0.0", PORT), SaifuHandler).serve_forever()

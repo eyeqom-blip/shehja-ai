@@ -4,7 +4,7 @@ _LOCK = threading.Lock()
 _HEAL_LOG = []
 _TOTAL_HEALED = 0
 _LAST_ALERT_TS = 0
-VALID_PERSONAS = {"shehja", "ansh", "armaan", "rayan", "shastri", "sweety", "vadil"}
+VALID_PERSONAS = {"saifu", "ansh", "armaan", "rayan", "shastri", "sweety", "vadil"}
 VALID_TONES = {"auto", "soft", "calm", "teacher", "energy"}
 
 def record_heal(kind, detail):
@@ -38,7 +38,7 @@ def maybe_alert_telegram(send_tg_fn, title, detail):
             return
         _LAST_ALERT_TS = now
     try:
-        send_tg_fn(f"🛠️ <b>Shehja Self-Healer Alert</b>\n<b>{title}</b>\n<code>{str(detail)[:280]}</code>")
+        send_tg_fn(f"🛠️ <b>Saifu Self-Healer Alert</b>\n<b>{title}</b>\n<code>{str(detail)[:280]}</code>")
     except Exception:
         pass
 
@@ -46,10 +46,10 @@ def heal_chat_request(d, u, valid_faiths):
     if not isinstance(d, dict):
         record_heal("bad_payload", "Non-dict JSON")
         d = {}
-    persona = str(d.get("persona") or "shehja").strip().lower()
+    persona = str(d.get("persona") or "saifu").strip().lower()
     if persona not in VALID_PERSONAS:
-        record_heal("bad_persona", f"{persona} -> shehja")
-        persona = "shehja"
+        record_heal("bad_persona", f"{persona} -> saifu")
+        persona = "saifu"
     faith = str(d.get("faith") or (u.get("faith") if isinstance(u, dict) else "") or "hindu").strip().lower()
     if faith not in valid_faiths:
         record_heal("bad_faith", f"{faith} -> hindu")

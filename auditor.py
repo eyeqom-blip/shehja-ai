@@ -81,7 +81,7 @@ def _sanitize_text_for_faith(text, faith, persona=""):
                     w = m.group(0)
                     return dgreet if any("\u0900" <= ch <= "\u097f" for ch in w) else greet
                 out = pat.sub(_rep, out)
-    if persona == "shehja":
+    if persona == "saifu":
         out = re.sub(r"\b(mera\s+beta|meri\s+beti|beta|beti)\b", "dost", out, flags=re.I)
         out = re.sub(r"(मेरा\s+बेटा|मेरी\s+बेटी|बेटा|बेटी)", "दोस्त", out)
         out = re.sub(r"(મારા\s+બેટા|બેટા)", "દોસ્ત", out)
@@ -122,7 +122,7 @@ def jarvis_pre_audit(history, user_text, req_faith, persona, group_mode, faith_p
         if mc.get("role") == "assistant" and mc.get("content"):
             c = _sanitize_text_for_faith(mc["content"], effective_faith, persona)
             if not group_mode:
-                c = re.sub(r"^(Shehja|Ansh|Haarish|Armaan|Rayan|Shastri Ji|Hafez / Aalima)\s*:\s*", "", c, flags=re.M | re.I)
+                c = re.sub(r"^(Saifu|Ansh|Haarish|Armaan|Rayan|Shastri Ji|Hafez / Aalima)\s*:\s*", "", c, flags=re.M | re.I)
             mc["content"] = c
         clean_history.append(mc)
 
@@ -138,7 +138,7 @@ def jarvis_pre_audit(history, user_text, req_faith, persona, group_mode, faith_p
         notes.append(f"- UNIVERSAL DYNAMIC MATCH: User spoke in {effective_faith.upper()} context — reply warmly in {effective_faith.upper()} etiquette ('{greet}').")
     if persona == "shastri" and effective_faith == "muslim":
         notes.append("- ADAB LOCK: As Hafez/Aalima, speak with dignity and hikmah. NEVER call user 'yaar'.")
-    if persona == "shehja":
+    if persona == "saifu":
         notes.append("- DOST LOCK: Address user strictly as 'dost'/'yaar' or by name. NEVER use 'beta', 'बेटा', 'beti', or 'બેટા'.")
 
     return {"effective_faith": effective_faith, "clean_history": clean_history, "audit_note": "\n".join(notes), "is_bait": is_bait, "char_name": char_name}
@@ -154,7 +154,7 @@ def _needs_rewrite(reply, faith, persona, group_mode):
         return True
     if persona == "shastri" and faith == "muslim" and re.search(r"\byaar\b", reply, re.I):
         return True
-    if persona == "shehja" and re.search(r"(\bbeta\b|बेटा|બેટા)", reply, re.I):
+    if persona == "saifu" and re.search(r"(\bbeta\b|बेटा|બેટા)", reply, re.I):
         return True
     return False
 
@@ -170,7 +170,7 @@ def jarvis_post_audit(reply, faith, persona, group_mode, user_text, faith_profil
             sys_aud = (
                 f"You are JARVIS AUDITOR. Fix this draft reply strictly.\n"
                 f"1. Faith MUST be {faith.upper()} (Greeting: '{greet}'). Remove ALL other-religion words (like Walaikum Assalam, Pranam, Namaste, Allah, Bhagwan if wrong faith).\n"
-                f"2. Character: {char_name}. {'Shehja MUST address user ONLY as dost/yaar, NEVER beta/बेटा.' if persona == 'shehja' else ''}\n"
+                f"2. Character: {char_name}. {'Saifu MUST address user ONLY as dost/yaar, NEVER beta/बेटा.' if persona == 'saifu' else ''}\n"
                 f"3. Keep English [SPOKEN]...[/SPOKEN] tag exact (never translate tag to Hindi).\n"
                 f"Output ONLY the corrected final reply."
             )

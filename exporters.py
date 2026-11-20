@@ -155,7 +155,7 @@ def build_pptx_bytes(ppt_data, theme_key="auto"):
         theme_key = random.choice(list(PPT_THEMES.keys()))
     th = PPT_THEMES[theme_key]
     title = ppt_data.get("title") or "Presentation"
-    subtitle = ppt_data.get("subtitle") or "Prepared with Shehja AI (SR)"
+    subtitle = ppt_data.get("subtitle") or "Prepared with Saifu AI (SR)"
     slides_xml = [_render_cover(title, subtitle, th, random.randint(0, 3))]
     shuffled = LAYOUTS[:]
     random.shuffle(shuffled)
