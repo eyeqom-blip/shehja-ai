@@ -112,6 +112,7 @@ def init_db():
         "CREATE TABLE IF NOT EXISTS kitchen_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, updated_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS push_subscriptions (id TEXT PRIMARY KEY, sub_json TEXT NOT NULL, faith TEXT NOT NULL, user_name TEXT NOT NULL, is_fasting INTEGER DEFAULT 0, updated_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS sent_notifications (slot_key TEXT PRIMARY KEY, sent_at BIGINT NOT NULL)",
+        "CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, link_url TEXT NOT NULL, link_label TEXT NOT NULL, active INTEGER DEFAULT 1, created_at BIGINT NOT NULL)",
     ]
     for s in stmts:
         db_exec(s)
@@ -176,6 +177,93 @@ def save_kitchen_profile(user_id, prof):
         "ON CONFLICT (user_id) DO UPDATE SET profile_json = EXCLUDED.profile_json, updated_at = EXCLUDED.updated_at",
         (user_id, json.dumps(prof), int(time.time())),
     )
+
+
+
+def send_telegram_msg(text):
+    tok = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    cid = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    if not tok or not cid:
+        return False
+    try:
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{tok}/sendMessage",
+            data=json.dumps({"chat_id": cid, "text": text, "parse_mode": "HTML"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def get_app_stats():
+    u_cnt = (db_exec("SELECT COUNT(*) FROM users", fetch="one") or [0])[0]
+    c_cnt = (db_exec("SELECT COUNT(*) FROM user_chats", fetch="one") or [0])[0]
+    p_cnt = (db_exec("SELECT COUNT(*) FROM push_subscriptions", fetch="one") or [0])[0]
+    return {"users": int(u_cnt), "chats": int(c_cnt), "push_subs": int(p_cnt), "db": ("neon" if USE_PG else "sqlite"), "uptime_sec": int(time.time() - START_TIME)}
+
+
+def poll_telegram_commands():
+    tok = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    cid = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    if not tok or not cid:
+        return
+    try:
+        row = db_exec("SELECT value FROM config WHERE key = 'tg_offset'", fetch="one")
+        offset = int(row[0]) if row and str(row[0]).isdigit() else 0
+        url = f"https://api.telegram.org/bot{tok}/getUpdates?offset={offset}&limit=10&timeout=0"
+        with urllib.request.urlopen(urllib.request.Request(url), timeout=6) as resp:
+            d = json.loads(resp.read().decode("utf-8"))
+        max_id = offset
+        for upd in (d.get("result") or []):
+            uid = int(upd.get("update_id", 0))
+            if uid >= max_id:
+                max_id = uid + 1
+            msg = upd.get("message") or {}
+            if str(msg.get("chat", {}).get("id", "")) != cid:
+                continue
+            txt = (msg.get("text") or "").strip()
+            if txt.startswith("/announce "):
+                raw = txt[10:].strip()
+                parts = [x.strip() for x in raw.split("|")]
+                title = parts[0] if len(parts) > 0 and parts[0] else "New Update!"
+                body = parts[1] if len(parts) > 1 else ""
+                link = parts[2] if len(parts) > 2 else ""
+                db_exec("UPDATE announcements SET active = 0")
+                db_exec("INSERT INTO announcements (id, title, body, link_url, link_label, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)", (uuid.uuid4().hex[:12], title, body, link, "Download / Open", int(time.time())))
+                send_telegram_msg(f"✅ <b>App Announcement Live!</b>\n<b>{title}</b>\n{body}\n{link}")
+            elif txt == "/clear":
+                db_exec("UPDATE announcements SET active = 0")
+                send_telegram_msg("🧹 App startup announcement cleared!")
+            elif txt == "/stats":
+                st = get_app_stats()
+                send_telegram_msg(f"📊 <b>Shehja SR Live Stats</b>\n👥 Users: <b>{st['users']}</b>\n💬 Chats: <b>{st['chats']}</b>\n🔔 Push Alerts: <b>{st['push_subs']}</b>\n🗄️ DB: <b>{st['db']}</b>\n⏱️ Uptime: <b>{st['uptime_sec']}s</b>")
+            elif txt == "/help":
+                send_telegram_msg("🤖 <b>Shehja Dev Bot Commands:</b>\n\n<code>/announce Title | Message | Link</code>\n<code>/clear</code> — Hide popup\n<code>/stats</code> — Live stats")
+        if max_id > offset:
+            db_exec("INSERT INTO config (key, value) VALUES ('tg_offset', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (str(max_id),))
+    except Exception:
+        pass
+
+
+def run_dev_bg_tick():
+    try:
+        run_notification_tick(db_exec)
+    except Exception:
+        pass
+    try:
+        poll_telegram_commands()
+        ist = time.gmtime(time.time() + 19800)
+        if ist.tm_hour == 9 and ist.tm_min <= 25:
+            sk = f"{ist.tm_year}-{ist.tm_mon:02d}-{ist.tm_mday:02d}_tg_stats"
+            if not db_exec("SELECT slot_key FROM sent_notifications WHERE slot_key = ?", (sk,), fetch="one"):
+                db_exec("INSERT INTO sent_notifications (slot_key, sent_at) VALUES (?, ?) ON CONFLICT (slot_key) DO NOTHING", (sk, int(time.time())))
+                st = get_app_stats()
+                send_telegram_msg(f"🌅 <b>Good Morning Rayan! Daily SR Stats</b>\n👥 Users: <b>{st['users']}</b>\n💬 Chats: <b>{st['chats']}</b>\n🔔 Push Active: <b>{st['push_subs']}</b>\n🗄️ DB: <b>{st['db']}</b> ✅")
+    except Exception:
+        pass
 
 
 def get_config():
@@ -603,13 +691,32 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 return
             rows = db_exec("SELECT role, content FROM user_messages WHERE chat_id = ? ORDER BY seq ASC", (cid,), fetch="all") or []
             self.send_json(200, [{"role": r[0], "content": r[1]} for r in rows])
+        elif path == "/watchdog":
+            try:
+                db_exec("SELECT 1", fetch="one")
+                poll_telegram_commands()
+                st = get_app_stats()
+                st["status"] = "healthy"
+                st["gemini_key"] = bool(get_config().get("api_key"))
+                st["sarvam_key"] = bool(os.environ.get("SARVAM_API_KEY"))
+                st["telegram_dev"] = bool(os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID"))
+                self.send_json(200, st)
+            except Exception as e:
+                try:
+                    init_db()
+                except Exception:
+                    pass
+                self.send_json(500, {"status": "recovering", "error": str(e)})
+        elif path == "/api/announcement":
+            r = db_exec("SELECT id, title, body, link_url, link_label FROM announcements WHERE active = 1 ORDER BY created_at DESC LIMIT 1", fetch="one")
+            self.send_json(200, {"announcement": ({"id": r[0], "title": r[1], "body": r[2], "link_url": r[3], "link_label": r[4]} if r else None)})
         elif path == "/api/push/key":
             pub, _ = ensure_vapid_keys(db_exec)
             self.send_json(200, {"public_key": pub})
         elif path == "/health":
             try:
                 db_exec("SELECT 1", fetch="one")
-                threading.Thread(target=run_notification_tick, args=(db_exec,), daemon=True).start()
+                threading.Thread(target=run_dev_bg_tick, daemon=True).start()
                 self.send_json(200, {"status": "ok", "db": "neon" if USE_PG else "sqlite", "uptime_sec": int(time.time() - START_TIME)})
             except Exception as e:
                 self.send_json(500, {"status": "error", "error": str(e)})
@@ -847,7 +954,7 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                 if cfg["provider"] == "demo":
                     reading = f"Pranam {nu['name']}! Aapka Mulank **{nu['mulank']}**, Bhagyank **{nu['bhagyank']}**, Kua **{nu['kua']}** aur Naam Ank **{nu['naam_ank']}** hai. Lucky Numbers: **{nu['lucky_numbers']}**. *(Demo Mode)*"
                 else:
-                    active_faith = (u["faith"] if u else None) or d.get("faith") or "hindu"
+                    active_faith = d.get("faith") or (u["faith"] if u else None) or "hindu"
                     sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"], faith=active_faith)
                     q_txt = (
                         f"Complete Vedic & Lo Shu Numerology Report:\n"

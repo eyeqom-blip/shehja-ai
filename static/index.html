@@ -131,6 +131,16 @@
       .app-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:4px}
     .app-chk{display:flex;align-items:center;gap:6px;font-size:12.5px;background:#101318;padding:6px 8px;border-radius:7px;border:1px solid #2b303c;cursor:pointer}
     .k-row{display:flex;align-items:center;justify-content:space-between;background:#101318;padding:8px 10px;border-radius:8px;border:1px solid #2b303c;margin-bottom:6px;font-size:13px;gap:8px}
+      .sidebar-tools{padding:8px 12px;border-top:1px solid #222630;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .st-pill{padding:7px 8px;border-radius:9px;border:1px solid #2d3340;background:#171a22;color:#e2e8f0;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;justify-content:center}
+    .st-pill:hover{border-color:var(--ac);background:#1f2430}
+    .chat-container{transition:background .8s ease}
+    body[data-mood="peace"] .chat-container{background:radial-gradient(circle at top,rgba(16,185,129,.08),transparent 70%)}
+    body[data-mood="care"] .chat-container{background:radial-gradient(circle at top,rgba(245,158,11,.09),transparent 70%)}
+    body[data-mood="happy"] .chat-container{background:radial-gradient(circle at top,rgba(236,72,153,.09),transparent 70%)}
+    body[data-mood="study"] .chat-container{background:radial-gradient(circle at top,rgba(59,130,246,.09),transparent 70%)}
+    .msg-row.ai .msg-bubble{background:rgba(27,30,38,.92);backdrop-filter:blur(8px);box-shadow:0 4px 18px rgba(0,0,0,.22)}
+    .ann-card{border:1px solid #10a37f;background:linear-gradient(155deg,#102620,#171b24);text-align:center}
   </style>
 </head>
 <body data-theme="shehja">
@@ -229,6 +239,16 @@
     </div>
     <button class="new-chat-btn" onclick="startNewChat()"><span>＋</span> Naya Chat</button>
     <div class="chat-list" id="chatList"></div>
+    <div class="sidebar-tools">
+      <button class="st-pill" id="faithToolBtn" style="border-color:#f59e0b;color:#fcd34d;" onclick="toggleSidebar(false);openFaithTool()">🪔 Kundli</button>
+      <button class="st-pill" id="numToolBtn" style="border-color:#a855f7;color:#d8b4fe;" onclick="toggleSidebar(false);openNumerologyDirect()">🔢 Num/Tarot</button>
+      <button class="st-pill" style="border-color:#fb7185;color:#fda4af;" onclick="toggleSidebar(false);openKitchenModal()">👩‍🍳 Kitchen</button>
+      <button class="st-pill" onclick="toggleSidebar(false);openPptModal()">📊 PPT</button>
+      <button class="st-pill" onclick="toggleSidebar(false);openXlsxModal()">📗 Excel</button>
+      <button class="st-pill" onclick="toggleSidebar(false);openStudioModal()">🎨 Studio</button>
+      <button class="st-pill" onclick="toggleSidebar(false);openCalcModal()">🧮 Calc</button>
+      <button class="st-pill" id="searchToggleSide" onclick="toggleSearch()">🌐 Search</button>
+    </div>
     <div class="sidebar-footer">
             <button class="side-btn" id="pushBtn" onclick="enableDailyCarePush()"><span>🔔 Daily Care Alerts</span><span class="mode-badge" id="pushBadge">OFF</span></button>
       <button class="side-btn" id="fastBtn" onclick="toggleFastingToday()"><span>🌙 Aaj Roza / Vrat / Atthai</span><span class="mode-badge" id="fastBadge">OFF</span></button>
@@ -307,26 +327,22 @@
 
     <div class="input-area">
       <div class="live-banner" id="liveBanner"><span id="liveStatus">🎙️ Sun rahi hoon... (Boliye)</span><div style="display:flex;gap:6px;"><button onclick="interruptAndListen()">🎙️ Abhi Bolo</button><button onclick="toggleLiveTalk()">⏹️ Band</button></div></div>
-      <div class="toolbar-row">
-        <button class="tool-pill" id="faithToolBtn" style="border-color:#f59e0b;color:#fcd34d;" onclick="openFaithTool()">🪔 Kundli</button>
-        <button class="tool-pill" id="numToolBtn" style="border-color:#a855f7;color:#d8b4fe;" onclick="openNumerologyDirect()">🔢 Num/Tarot</button>
-        <button class="tool-pill" style="border-color:#fb7185;color:#fda4af;" onclick="openKitchenModal()">👩‍🍳 Kitchen</button>
-        <button class="tool-pill" onclick="openPptModal()">📊 PPT</button>
-        <button class="tool-pill" onclick="openXlsxModal()">📗 Excel</button>
-        <button class="tool-pill" onclick="openStudioModal()">🎨 Studio</button>
-        <button class="tool-pill" onclick="openCalcModal()">🧮 Calc</button>
-        <button class="tool-pill" id="searchToggle" onclick="toggleSearch()">🌐 Search</button>
-        <button class="tool-pill" onclick="document.getElementById('camInput').click()">📸 Cam</button>
-        <button class="tool-pill" onclick="document.getElementById('imgInput').click()">🖼️ Photo</button>
+      <div class="toolbar-row" style="justify-content:space-between;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="tool-pill" onclick="toggleSidebar(true)" style="border-color:var(--ac);color:#a7f3d0;">🧰 Tools</button>
+          <button class="tool-pill" onclick="document.getElementById('camInput').click()">📸</button>
+          <button class="tool-pill" onclick="document.getElementById('imgInput').click()">🖼️</button>
+          <button class="tool-pill" id="musicBtn" onclick="toggleBgMusic()">🎵 Music: OFF</button>
+        </div>
         <select class="voice-select" id="voiceTone">
-          <option value="auto">🔊 Voice: Smart Emotion</option>
-          <option value="priya">🔊 Priya (Warm Natural)</option>
-          <option value="simran">🔊 Simran (Soft Deep)</option>
-          <option value="ritu">🔊 Ritu (Sweet Friend)</option>
-          <option value="kavya">🔊 Kavya (Lively)</option>
-          <option value="soft">🔊 Soft Care Pace</option>
-          <option value="teacher">🔊 Clear Tutor</option>
-          <option value="energy">🔊 Energetic</option>
+          <option value="auto">🔊 Voice: Smart</option>
+          <option value="priya">🔊 Priya</option>
+          <option value="simran">🔊 Simran</option>
+          <option value="ritu">🔊 Ritu</option>
+          <option value="kavya">🔊 Kavya</option>
+          <option value="soft">🔊 Soft</option>
+          <option value="teacher">🔊 Tutor</option>
+          <option value="energy">🔊 Energy</option>
         </select>
         <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImagePick(event)" />
         <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="handleImagePick(event)" />
@@ -554,6 +570,16 @@
     </div>
   </div>
 
+    <div class="modal-backdrop" id="annModal">
+    <div class="modal ann-card">
+      <div style="font-size:32px;margin-bottom:6px;">📢</div>
+      <h2 id="annTitle" style="color:#34d399;margin-bottom:8px;">New Update</h2>
+      <p id="annBody" style="font-size:14px;color:#e2e8f0;line-height:1.6;margin-bottom:14px;"></p>
+      <a id="annLink" href="#" target="_blank" class="dl-btn" style="display:none;margin-bottom:10px;">🔗 Open / Download</a>
+      <div><button class="btn-secondary" style="width:100%;" onclick="dismissAnn()">Close</button></div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="pptModal">
     <div class="modal">
       <h2>📊 Unique PPT Maker (.pptx)</h2>
@@ -608,6 +634,8 @@
       <div class="form-group" id="modelGroup" style="display:none;"><label>Primary Model ID</label><input type="text" id="modelInput" /></div>
       <div class="form-group" id="keyGroup" style="display:none;"><label>API Key (<span id="keyStatusText">Not Set</span>)</label><input type="password" id="apiKeyInput" placeholder="Nayi API key daalein..." /></div>
       <div class="form-group"><label>Extra Custom Rules</label><textarea id="customPromptInput" rows="2"></textarea></div>
+      <div class="form-group"><label>📢 App Update / Ad Popup (Optional Title)</label><input type="text" id="admAnnTitle" placeholder="Khali chhodein ya title likhein..." /></div>
+      <div class="form-group"><label>Update / Ad Message + Download Link</label><input type="text" id="admAnnBody" placeholder="Short message..." style="margin-bottom:5px;" /><input type="text" id="admAnnLink" placeholder="https://download-link..." /></div>
       <div class="form-group"><label>New Secret Password (Optional)</label><input type="password" id="newPinInput" placeholder="Badalna ho toh likhein..." /></div>
       <div class="error-msg" id="settingsError"></div>
       <div class="modal-actions"><button class="btn-secondary" onclick="closeModal('settingsModal')">Cancel</button><button class="btn-primary" onclick="saveSettingsUI()">Save</button></div>
@@ -644,7 +672,94 @@
 
     function closeModal(id) { document.getElementById(id).classList.remove("open"); }
     function toggleSidebar(open) { document.getElementById("sidebar").classList.toggle("open", open); document.getElementById("overlay").classList.toggle("open", open); }
-    function toggleSearch() { useLiveSearch = !useLiveSearch; const b = document.getElementById("searchToggle"); b.classList.toggle("active", useLiveSearch); b.textContent = useLiveSearch ? "🌐 Search: ON" : "🌐 Search"; }
+    // Mood Theme + Auto-Ducking Light Background Music (Web Audio API)
+    let bgMusicOn = false, bgAudioCtx = null, bgGain = null, bgTimer = null, currentMood = "peace";
+    function detectAndSetMood(txt) {
+      const t = (txt || "").toLowerCase();
+      let m = "peace";
+      if (anyWord(t, ["sad", "udaas", "dukhi", "tension", "akel", "sorry", "ro ", "mushkil", "darr", "stress"])) m = "care";
+      else if (anyWord(t, ["khush", "mubarak", "badhai", "awesome", "great", "haha", "mazaa", "love", "happy"])) m = "happy";
+      else if (anyWord(t, ["formula", "code", "exam", "python", "science", "maths", "study", "std", "cbse", "gseb"])) m = "study";
+      currentMood = m;
+      document.body.dataset.mood = m;
+    }
+    function anyWord(t, arr) { return arr.some(w => t.includes(w)); }
+
+    function toggleBgMusic() {
+      bgMusicOn = !bgMusicOn;
+      const btn = document.getElementById("musicBtn");
+      if (bgMusicOn) {
+        btn.classList.add("active"); btn.textContent = "🎵 Music: ON";
+        startAmbientLoop();
+      } else {
+        btn.classList.remove("active"); btn.textContent = "🎵 Music: OFF";
+        stopAmbientLoop();
+      }
+    }
+    function duckMusic(isSpeechPlaying) {
+      if (!bgGain || !bgAudioCtx) return;
+      try {
+        bgGain.gain.setTargetAtTime(isSpeechPlaying ? 0.008 : 0.06, bgAudioCtx.currentTime, 0.25);
+      } catch (e) {}
+    }
+    function startAmbientLoop() {
+      try {
+        if (!bgAudioCtx) bgAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (bgAudioCtx.state === "suspended") bgAudioCtx.resume();
+        if (!bgGain) { bgGain = bgAudioCtx.createGain(); bgGain.gain.value = 0.06; bgGain.connect(bgAudioCtx.destination); }
+        const chords = {
+          peace: [[220, 277.18, 329.63], [196, 246.94, 293.66]],
+          care:  [[174.61, 220, 261.63], [164.81, 196, 246.94]],
+          happy: [[261.63, 329.63, 392.00], [293.66, 369.99, 440.00]],
+          study: [[246.94, 293.66, 369.99], [220, 261.63, 329.63]]
+        };
+        let step = 0;
+        const playChord = () => {
+          if (!bgMusicOn || !bgAudioCtx) return;
+          const seq = chords[currentMood] || chords.peace;
+          const notes = seq[step % seq.length]; step++;
+          notes.forEach(freq => {
+            const osc = bgAudioCtx.createOscillator(), ng = bgAudioCtx.createGain();
+            osc.type = "sine"; osc.frequency.value = freq;
+            ng.gain.setValueAtTime(0.001, bgAudioCtx.currentTime);
+            ng.gain.linearRampToValueAtTime(0.28, bgAudioCtx.currentTime + 0.8);
+            ng.gain.exponentialRampToValueAtTime(0.001, bgAudioCtx.currentTime + 3.4);
+            osc.connect(ng); ng.connect(bgGain);
+            osc.start(); osc.stop(bgAudioCtx.currentTime + 3.5);
+          });
+        };
+        playChord();
+        clearInterval(bgTimer);
+        bgTimer = setInterval(playChord, 3400);
+      } catch (e) {}
+    }
+    function stopAmbientLoop() {
+      clearInterval(bgTimer);
+      if (bgGain && bgAudioCtx) { try { bgGain.gain.setTargetAtTime(0.0001, bgAudioCtx.currentTime, 0.2); } catch (e) {} }
+    }
+
+    // Startup Announcement Check
+    let activeAnnId = "";
+    async function checkAnnouncement() {
+      try {
+        const d = await (await fetch("/api/announcement")).json();
+        const a = d.announcement;
+        if (!a || localStorage.getItem("shehja_seen_ann") === a.id) return;
+        activeAnnId = a.id;
+        document.getElementById("annTitle").textContent = a.title;
+        document.getElementById("annBody").textContent = a.body || "";
+        const lnk = document.getElementById("annLink");
+        if (a.link_url) { lnk.href = a.link_url; lnk.textContent = "🔗 " + (a.link_label || "Open / Download"); lnk.style.display = "inline-block"; }
+        else { lnk.style.display = "none"; }
+        document.getElementById("annModal").classList.add("open");
+      } catch (e) {}
+    }
+    function dismissAnn() {
+      if (activeAnnId) { try { localStorage.setItem("shehja_seen_ann", activeAnnId); } catch (e) {} }
+      closeModal("annModal");
+    }
+
+    function toggleSearch() { useLiveSearch = !useLiveSearch; const b = document.getElementById("searchToggleSide"); if (b) { b.style.borderColor = useLiveSearch ? "#10a37f" : "#2d3340"; b.textContent = useLiveSearch ? "🌐 Search: ON" : "🌐 Search"; } }
     function toggleGroup() { isGroupMode = !isGroupMode; document.getElementById("groupToggle").classList.toggle("active", isGroupMode); }
 
     function secretLogoTap() {
@@ -933,7 +1048,8 @@
         const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: document.getElementById("loginEmail").value.trim(), password: document.getElementById("loginPass").value }) });
         const d = await res.json();
         if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
-        isGuest = false; await initSession();
+        isGuest = false; await checkAnnouncement();
+    initSession();
       } catch (e) {
         err.textContent = "⚠️ Network error — dubara tap karein."; err.style.display = "block";
       }
@@ -1071,7 +1187,7 @@
       window.speechSynthesis.cancel();
       if (btn.dataset.playing === "1") { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; return; }
       document.querySelectorAll(".speak-btn").forEach(b => { b.dataset.playing = "0"; b.textContent = "🔊 Suno"; });
-      btn.dataset.playing = "1"; btn.textContent = "⏳ Loading...";
+      btn.dataset.playing = "1"; btn.textContent = "⏳ Loading..."; duckMusic(true);
       try {
         const res = await fetch("/api/tts", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -1081,14 +1197,14 @@
         const blob = await res.blob(), url = URL.createObjectURL(blob);
         currentAudio = new Audio(url);
         btn.textContent = "⏹️ Roko";
-        currentAudio.onended = () => { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; URL.revokeObjectURL(url); };
+        currentAudio.onended = () => { duckMusic(false); btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; URL.revokeObjectURL(url); };
         await currentAudio.play();
       } catch (e) {
         const tick = String.fromCharCode(96);
         const clean = rawText.replace(/\[BLACKBOARD\][\s\S]*?\[\/BLACKBOARD\]/g, "").replace(new RegExp(tick + "{3}[\\s\\S]*?" + tick + "{3}", "g"), "").replace(/[*_#`>]/g, "");
         const u = new SpeechSynthesisUtterance(clean);
         u.lang = "hi-IN"; u.pitch = (document.getElementById("personaSelect").value === "shehja") ? 1.15 : 0.92; u.rate = 0.96;
-        u.onend = () => { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; };
+        u.onend = () => { duckMusic(false); btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; };
         btn.textContent = "⏹️ Roko"; window.speechSynthesis.speak(u);
       }
     }
@@ -1209,6 +1325,7 @@
         if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
         chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();
         aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
+        detectAndSetMood(text + " " + data.reply);
         scrollToMsgTop(aiB.closest(".msg-row"));
         if (data.kitchen_updates) {
           if (data.kitchen_updates.cooked) {
@@ -1598,6 +1715,10 @@
       const err = document.getElementById("settingsError"); err.style.display = "none";
       const res = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: document.getElementById("pinInput").value.trim(), new_pin: document.getElementById("newPinInput").value.trim(), provider: document.getElementById("providerSelect").value, model: document.getElementById("modelInput").value.trim(), api_key: document.getElementById("apiKeyInput").value.trim(), custom_prompt: document.getElementById("customPromptInput").value.trim() }) });
       const d = await res.json(); if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
+      const aT = document.getElementById("admAnnTitle").value.trim();
+      if (aT) {
+        await fetch("/api/announcement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: document.getElementById("pinInput").value.trim(), title: aT, body: document.getElementById("admAnnBody").value.trim(), link_url: document.getElementById("admAnnLink").value.trim() }) });
+      }
       closeModal("settingsModal"); alert("✅ Settings Saved!");
     }
 
@@ -1693,11 +1814,11 @@
 
     async function autoSpeakAndLoop(btn, rawText, inlineB64, inlineMime) {
       if (!isLiveTalk) return;
-      isAiSpeaking = true;
+      isAiSpeaking = true; duckMusic(true);
       setLiveStatus("🔊 Jawab bol rahi hoon...");
       if (btn) { btn.dataset.playing = "1"; btn.textContent = "⏹️ Roko"; }
       const finishSpeak = () => {
-        isAiSpeaking = false;
+        isAiSpeaking = false; duckMusic(false);
         if (btn) { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; }
         if (isLiveTalk) setTimeout(startLiveListening, 450);
       };
