@@ -170,7 +170,7 @@ PERSONAS = {
 }
 
 
-def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, custom_prompt="", kitchen_ctx=None, faith="hindu"):
+def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, custom_prompt="", kitchen_ctx=None, faith="hindu", audit_note=""):
     p = PERSONAS.get(persona_key, PERSONAS["shehja"])
     fp = FAITH_PROFILES.get(faith, FAITH_PROFILES["hindu"])
     char_name = fp["names"].get(persona_key, p["name"])
@@ -214,15 +214,18 @@ def build_system_prompt(persona_key="shehja", edu_opts=None, group_mode=False, c
         )
 
     if group_mode:
+        gn = fp["names"]
         parts.append(
-            "COLLABORATIVE GROUP MODE ACTIVE: Present a lively, natural team discussion where "
-            "**Shehja** (equal peer friend — address user ONLY as 'yaar'/'dost', NEVER 'beta'), **Ansh** (deep theory/clarity), **Armaan** (tech/execution), "
-            "and **Rayan** (big-picture strategy) each contribute short, sharp perspectives and then give one unified final conclusion!"
+            f"COLLABORATIVE GROUP MODE ACTIVE (Faith={faith.upper()}): Present a lively team discussion using ONLY these character names: "
+            f"**{gn.get('shehja','Shehja')}** (equal peer friend — 'yaar'/'dost', NEVER 'beta'), **{gn.get('ansh','Ansh')}** (tutor/clarity), "
+            f"**{gn.get('armaan','Armaan')}** (tech), **{gn.get('rayan','Rayan')}** (strategy), and if spiritual add **{gn.get('shastri','Guide')}**. "
+            f"ALL speakers MUST strictly follow {faith.upper()} etiquette ('{fp['greeting']}')."
         )
-
     if custom_prompt and custom_prompt.strip():
         parts.append("Extra Guidelines:\n" + custom_prompt.strip())
 
+    if audit_note:
+        parts.append(audit_note)
     return "\n\n".join(parts)
 
 

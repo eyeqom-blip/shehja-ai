@@ -20,7 +20,8 @@ from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from exporters import ICON_SVG, LAYOUTS, build_pptx_bytes, build_xlsx_bytes, make_sr_png
-from personas import build_system_prompt, detect_tts_config
+from personas import FAITH_PROFILES, build_system_prompt, detect_tts_config
+from auditor import jarvis_pre_audit, jarvis_post_audit, sanitize_spoken_for_faith
 from notifier import build_caring_message, ensure_vapid_keys, run_notification_tick, send_push_one
 from islamic import compute_prayer_times, compute_qibla, compute_zakat, render_qibla_svg
 from vedic import TAROT_DECK, compute_gun_milan, compute_kundli, compute_numerology, get_today_panchang, render_kundli_svg, render_loshu_svg
@@ -464,7 +465,7 @@ def synth_neural_mp3(text, persona_key, tone="auto"):
     return asyncio.run(_tts_async(clean[:2500], voice, rate, pitch))
 
 
-def call_demo(user_text, persona="shehja"):
+def call_demo(user_text, persona="shehja", faith="hindu"):
     time.sleep(0.25)
     q = user_text.lower()
     if any(w in q for w in ("contact", "mail", "email", "owner", "kisne banaya")):
@@ -473,8 +474,8 @@ def call_demo(user_text, persona="shehja"):
         return f"Aao beta, aaram se baitho. Maine suna tumne jo kaha (*\"{user_text}\"*). Zindagi mein har mushkil waqt guzar jata hai, himmat mat haaro — main hoon na tumhare saath."
     if persona == "ansh":
         return f"Chalo is topic ko bilkul basic se samajhte hain!\n\n[BLACKBOARD]\nTopic: {user_text[:40]}\n1. Core Definition & Law\n2. Formula & Steps\n3. Solved Board Example\n[/BLACKBOARD]\n\n*(Abhi demo mode chal raha hai — live API key lagate hi full syllabus answers aayenge.)*"
-    return f"Haan ji, main sun rahi hoon! 🌸 Aapne kaha: *\"{user_text}\"*. Abhi demo mode chal raha hai, lekin dost ki tarah main hamesha baat karne ke liye ready hoon!"
-
+    gr = {"muslim": "Assalamu Alaikum", "jain": "Jai Jinendra", "sikh": "Sat Sri Akal ji", "christian": "Peace & Blessings"}.get(faith, "Haan ji")
+    return f"{gr}! 🌸 Aapne kaha: *\"{user_text}\"*. Abhi demo mode chal raha hai, lekin main hamesha baat karne ke liye ready hoon!"
 
 def call_gemini(history, model, api_key, system_text, use_search=False, temp=0.65):
     if not api_key:
@@ -955,262 +956,32 @@ class ShehjaHandler(BaseHTTPRequestHandler):
                     reading = f"Pranam {nu['name']}! Aapka Mulank **{nu['mulank']}**, Bhagyank **{nu['bhagyank']}**, Kua **{nu['kua']}** aur Naam Ank **{nu['naam_ank']}** hai. Lucky Numbers: **{nu['lucky_numbers']}**. *(Demo Mode)*"
                 else:
                     active_faith = d.get("faith") or (u["faith"] if u else None) or "hindu"
-                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"], faith=active_faith)
-                    q_txt = (
-                        f"Complete Vedic & Lo Shu Numerology Report:\n"
-                        f"- Naam: {nu['name']} (Chaldean Total: {nu['chaldean_raw']} -> {nu['naam_ank']}), Maa ka Naam Ank: {nu['matri_ank']}\n"
-                        f"- Birth Date: {nu['dob']} ({nu['gender']})\n"
-                        f"- Mulank (Driver): {nu['mulank']} ({nu['ruler']}), Bhagyank (Conductor): {nu['bhagyank']}, Kua Number: {nu['kua']}\n"
-                        f"- Active Lo Shu Rajyogs/Planes: {', '.join(nu['active_planes']) or 'Mixed'}\n"
-                        f"- Strong/Repeated Numbers: {', '.join(nu['strong']) or 'Balanced'}\n"
-                        f"- Missing Numbers: {nu['missing']}\n"
-                        f"- Lucky Days: {nu['lucky_day']}, Lucky Colors: {nu['lucky_color']}, Lucky Numbers: {nu['lucky_numbers']}\n"
-                        f"- Mobile/Vehicle Number Check ({nu['extra_num'] or 'None'}): {nu['extra_status'] or 'N/A'}\n"
-                        f"- Prashna Number (1-108): {nu['prashna_num'] or 'N/A'} (Reduced: {nu['prashna_red']}) | Question: {d.get('question') or 'General Life Guidance'}\n\n"
-                        "Shastri Ji (Master Numerologist), is exact ank-jyotish aur Lo Shu Grid ke aadhar par Personality, Career/Business, Name Spelling Harmony, Missing Number ke Simple Remedies/Upay, Mobile/Vehicle check (agar diya ho), aur Prashna/Future Guidance warm Hinglish mein vistaar se batayein."
-                    )
-                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
-                self.send_json(200, {"num": nu, "svg": svg, "reading": reading})
-            except Exception as e:
-                self.send_json(500, {"error": str(e)})
-            return
-
-        if path == "/api/tarot":
-            try:
-                d = self.read_json()
-                question = (d.get("question") or "Mera aane wala samay kaisa rahega?").strip()
-                picks = random.sample(TAROT_DECK, 3)
-                cards = [
-                    {"pos": "1. Past / Jad", "name": picks[0][0], "meaning": picks[0][1]},
-                    {"pos": "2. Present / Abhi", "name": picks[1][0], "meaning": picks[1][1]},
-                    {"pos": "3. Future & Salah", "name": picks[2][0], "meaning": picks[2][1]},
-                ]
-                cfg = get_config()
-                if cfg["provider"] == "demo":
-                    reading = f"Aapke 3 Tarot Cards: **{cards[0]['name']}**, **{cards[1]['name']}**, aur **{cards[2]['name']}**. *(Demo Mode)*"
-                else:
-                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
-                    q_txt = (
-                        f"3-Card Tarot Reading for Question: '{question}'\n"
-                        f"- {cards[0]['pos']}: {cards[0]['name']} ({cards[0]['meaning']})\n"
-                        f"- {cards[1]['pos']}: {cards[1]['name']} ({cards[1]['meaning']})\n"
-                        f"- {cards[2]['pos']}: {cards[2]['name']} ({cards[2]['meaning']})\n\n"
-                        "Shastri Ji, in 3 Tarot cards ke aadhar par user ke sawaal ka heartfelt, clear aur sakaratmak (positive) guidance Hinglish mein samjhayein."
-                    )
-                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
-                self.send_json(200, {"question": question, "cards": cards, "reading": reading})
-            except Exception as e:
-                self.send_json(500, {"error": str(e)})
-            return
-
-        if path == "/api/kundli":
-            try:
-                d = self.read_json()
-                k = compute_kundli(
-                    d.get("dob", "2000-01-01"), d.get("tob", "12:00"),
-                    d.get("city", "Ahmedabad"), d.get("name", ""),
-                    d.get("mother_name", ""), d.get("dharma", "Sanatan / Hindu"),
-                )
-                svg = render_kundli_svg(k)
-                cfg = get_config()
-                if cfg["provider"] == "demo":
-                    reading = f"Pranam {k['name']}! Aapka Lagna **{k['lagna']}**, Chandra Rashi **{k['moon_rashi']}**, aur Nakshatra **{k['nakshatra']}** hai. Mulank **{k['mulank']}** aur Bhagyank **{k['bhagyank']}** hai. *(Demo Mode — API key lagane par poori Kundli faladesh aayegi!)*"
-                else:
-                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
-                    q_txt = (
-                        f"Jatak Details (Exact Calculated Vedic Chart):\n"
-                        f"- Naam: {k['name']} (Naam Ank: {k['naam_ank']}), Maa ka Naam: {k['mother_name'] or 'N/A'} (Matri Ank: {k['matri_ank']})\n"
-                        f"- Dharma/Parampara: {k['dharma']}\n"
-                        f"- Birth: {k['dob']} at {k['tob']} in {k['city']} ({k['vaar']})\n"
-                        f"- Tithi: {k['tithi']}, Lagna: {k['lagna']}, Chandra Rashi: {k['moon_rashi']}, Surya Rashi: {k['sun_rashi']}\n"
-                        f"- Nakshatra: {k['nakshatra']} (Naam Akshar: {k['nak_akshar']}, Lord: {k['nak_lord']})\n"
-                        f"- Current Dasha: {k['cur_dasha']}, Manglik: {k['manglik']}, Shani: {k['sade_sati']}\n"
-                        f"- Mulank: {k['mulank']}, Bhagyank: {k['bhagyank']}\n"
-                        f"- Planet Houses: {json.dumps(k['planets'])}\n\n"
-                        f"Shastri Ji, upar diye exact grah-nakshatra ke aadhar par {k['dharma']} parampara ke anusaar "
-                        "Jatak ki **poori Janam Kundli Faladesh** (Swabhav & Personality, Career & Finance, Education, Marriage & Family, Health, aur Positive Upay/Mantra/Daan/Lucky Color) warm Hinglish mein vistaar se batayein."
-                    )
-                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
-                self.send_json(200, {"kundli": k, "svg": svg, "reading": reading})
-            except Exception as e:
-                self.send_json(500, {"error": str(e)})
-            return
-
-        if path == "/api/milan":
-            try:
-                d = self.read_json()
-                k1 = compute_kundli(d.get("dob1", "2000-01-01"), d.get("tob1", "12:00"), d.get("city1", "Ahmedabad"), d.get("name1", "Var"))
-                k2 = compute_kundli(d.get("dob2", "2001-01-01"), d.get("tob2", "12:00"), d.get("city2", "Ahmedabad"), d.get("name2", "Vadhu"))
-                gm = compute_gun_milan(k1, k2)
-                cfg = get_config()
-                if cfg["provider"] == "demo":
-                    reading = f"Gun Milan Score: **{gm['total']} / 36**. *(Demo Mode)*"
-                else:
-                    sys_txt = build_system_prompt("shastri", None, False, cfg["custom_prompt"])
-                    q_txt = (
-                        f"Kundli Milan Report:\n"
-                        f"- {k1['name']}: Rashi {k1['moon_rashi']}, Nakshatra {k1['nakshatra']}, Manglik: {k1['manglik']}\n"
-                        f"- {k2['name']}: Rashi {k2['moon_rashi']}, Nakshatra {k2['nakshatra']}, Manglik: {k2['manglik']}\n"
-                        f"- Ashtakoot Gun Score: {gm['total']} / 36 (Varna {gm['varna']}, Vashya {gm['vashya']}, Tara {gm['tara']}, Yoni {gm['yoni']}, Maitri {gm['maitri']}, Gana {gm['gana']}, Bhakoot {gm['bhakoot']}, Nadi {gm['nadi']})\n\n"
-                        "Shastri Ji, is 36-Gun Milan aur Manglik stithi ka santulit aur sakaratmak vishleshan Hinglish mein karein."
-                    )
-                    reading = call_gemini([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt, False) if cfg["provider"] == "gemini" else call_openai([{"role": "user", "content": q_txt}], cfg["model"], cfg["api_key"], sys_txt)
-                self.send_json(200, {"milan": gm, "k1": k1, "k2": k2, "reading": reading})
-            except Exception as e:
-                self.send_json(500, {"error": str(e)})
-            return
-
-        if path == "/api/settings":
-            d = self.read_json()
-            cfg = get_config()
-            if str(d.get("pin") or "").strip() != cfg["admin_pin"]:
-                self.send_json(403, {"error": "Galat Secret Admin Password!"})
-                return
-            save_config(d.get("provider", "demo"), d.get("model", "gemini-3.5-flash-lite"), d.get("api_key", ""), str(d.get("new_pin") or "").strip(), d.get("custom_prompt"))
-            self.send_json(200, {"ok": True})
-            return
-
-        if path == "/api/tts":
-            try:
-                d = self.read_json()
-                txt, per, tn = d.get("text") or "", d.get("persona", "shehja"), d.get("tone", "auto")
-                aud, mime, s_err = None, None, "no_key"
-                if os.environ.get("SARVAM_API_KEY", "").strip():
-                    try:
-                        aud, mime = synth_sarvam_audio(txt, per, tn)
-                        s_err = "ok"
-                    except urllib.error.HTTPError as he:
-                        s_err = f"http_{he.code}_" + he.read().decode("utf-8", errors="ignore")[:100]
-                    except Exception as ex:
-                        s_err = str(ex)[:100]
-                if aud:
-                    self.send_bytes(200, mime, aud, {"X-TTS-Engine": "sarvam-bulbul-v3"})
-                    return
-                mp3 = synth_neural_mp3(txt, per, tn)
-                if not mp3:
-                    self.send_json(503, {"error": "TTS fallback"})
-                    return
-                self.send_bytes(200, "audio/mpeg", mp3, {"X-TTS-Engine": "edge-tts", "X-Sarvam-Status": s_err.replace("\n", " ")})
-            except Exception:
-                self.send_json(503, {"error": "TTS fallback"})
-            return
-
-        if path == "/api/image":
-            try:
-                d = self.read_json()
-                prompt = (d.get("prompt") or "").strip()
-                size = d.get("size", "1024x1024")
-                w, h = (size.split("x") if "x" in size else ("1024", "1024"))
-                seed = random.randint(1, 999999)
-                url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width={w}&height={h}&seed={seed}&nologo=true"
-                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, timeout=45) as resp:
-                    img_bytes = resp.read()
-                    ctype = resp.headers.get("Content-Type", "image/jpeg")
-                iid = uuid.uuid4().hex[:12]
-                if len(_IMG_CACHE) >= 15:
-                    _IMG_CACHE.pop(next(iter(_IMG_CACHE)))
-                _IMG_CACHE[iid] = (ctype, img_bytes)
-                self.send_json(200, {"url": f"/api/img/{iid}"})
-            except Exception as e:
-                self.send_json(500, {"error": f"Image generate nahi ho payi: {e}"})
-            return
-
-        if path == "/api/xlsx":
-            try:
-                d = self.read_json()
-                topic = (d.get("topic") or "").strip()
-                cfg = get_config()
-                if cfg["provider"] == "demo":
-                    x_data = {"title": topic[:24] or "Data", "headers": ["Item", "Category", "Value", "Notes"], "rows": [["Sample A", "Core", 85, "Good"], ["Sample B", "Test", 92, "Best"]]}
-                else:
-                    p = f'Create a neat Excel table for: "{topic}". Return ONLY JSON: {{"title":"SheetTitle","headers":["Col1","Col2","Col3"],"rows":[["v1",10,"note"]]}}'
-                    x_data = call_llm_json(cfg, p, "Output ONLY strict valid JSON for a spreadsheet.", temp=0.4)
-                raw = build_xlsx_bytes(x_data.get("title", "Sheet1"), x_data.get("headers", ["A"]), x_data.get("rows", []))
-                xid = uuid.uuid4().hex[:12]
-                fname = (re.sub(r"[^a-zA-Z0-9_-]+", "_", topic)[:28] or "Shehja_Sheet") + ".xlsx"
-                if len(_XLSX_CACHE) >= 20:
-                    _XLSX_CACHE.pop(next(iter(_XLSX_CACHE)))
-                _XLSX_CACHE[xid] = (fname, raw)
-                self.send_json(200, {"xlsx_id": xid, "filename": fname, "sheet": x_data})
-            except Exception as e:
-                self.send_json(500, {"error": str(e)})
-            return
-
-        if path == "/api/ppt":
-            try:
-                d = self.read_json()
-                topic = (d.get("topic") or "").strip()
-                cfg = get_config()
-                if cfg["provider"] == "demo":
-                    lays = random.sample(LAYOUTS, 3)
-                    ppt_data = {"title": topic.title(), "subtitle": f"{d.get('style')} ({d.get('lang')})", "slides": [{"layout": lays[0], "heading": f"Intro: {topic}", "bullets": ["Definition & overview", "Core importance", "Key scope", "Real example"], "takeaway": "Strong base."}, {"layout": lays[1], "heading": "Details", "bullets": ["Step 1", "Step 2", "Step 3", "Step 4"], "takeaway": "Clear flow."}]}
-                else:
-                    cnt = max(3, min(12, int(d.get("count", 8)) - 2))
-                    ang = random.choice(["visual storytelling", "analytical breakdown", "future-focused", "step-by-step practical"])
-                    p = f'Design a UNIQUE {d.get("style")} presentation on "{topic}". Angle: {ang}. Language: {d.get("lang")}. Content slides: {cnt}. Pick varied "layout" from ["grid","split","highlight","timeline","classic"]. Return ONLY JSON: {{"title":"...","subtitle":"...","slides":[{{"layout":"grid","heading":"...","bullets":["..."],"takeaway":"..."}}]}}'
-                    ppt_data = call_llm_json(cfg, p, "Expert educator & presentation designer. Output ONLY strict JSON.", temp=0.9)
-                raw, used_theme = build_pptx_bytes(ppt_data, d.get("theme", "auto"))
-                pid = uuid.uuid4().hex[:12]
-                fname = (re.sub(r"[^a-zA-Z0-9_-]+", "_", topic)[:28] or "Shehja_PPT") + "_SR.pptx"
-                if len(_PPT_CACHE) >= 20:
-                    _PPT_CACHE.pop(next(iter(_PPT_CACHE)))
-                _PPT_CACHE[pid] = (fname, raw)
-                self.send_json(200, {"ppt_id": pid, "filename": fname, "used_theme": used_theme, "ppt": ppt_data})
-            except Exception as e:
-                self.send_json(500, {"error": str(e)})
-            return
-
-        if path == "/api/creator":
-            try:
-                d = self.read_json()
-                topic, kind, style, lang = (d.get("topic") or "").strip(), d.get("kind", "reel_30s"), d.get("style", "AI Style"), d.get("lang", "Hindi")
-                cfg = get_config()
-                if cfg["provider"] == "demo":
-                    c_data = {"title": topic or "Creator Studio", "caption": "Demo script & lyrics", "scenes": [{"heading": "Scene 1", "narration": f"Namaste dosto! Aaj hum baat karenge {topic} ke baare mein."}, {"heading": "Scene 2", "narration": "Yeh bilkul simple aur interesting topic hai."}]}
-                else:
-                    p = f'Create a {kind} ({style}) creative script/song in {lang} on "{topic}". For songs, write catchy rhyming verse/chorus lines in scenes. Return ONLY JSON: {{"title":"Title","caption":"Full lyrics or social caption with hashtags","scenes":[{{"heading":"Scene/Verse 1","narration":"Spoken or sung lines (15-25 words)"}}]}} (4 to 6 scenes).'
-                    c_data = call_llm_json(cfg, p, "Creative Director, Lyricist & Video Scriptwriter. Output ONLY valid JSON.", temp=0.9)
-                self.send_json(200, c_data)
-            except Exception as e:
-                self.send_json(500, {"error": str(e)})
-            return
-
-        if path == "/api/chat":
-            try:
-                d = self.read_json()
-                history = d.get("history") or []
-                if not history:
-                    self.send_json(400, {"error": "Message khali hai"})
-                    return
-                cfg = get_config()
-                persona = d.get("persona", "shehja")
-                live_mode = bool(d.get("live_mode", False))
-                tone = d.get("tone", "auto")
-                u = self.get_session_user()
-                kitchen_ctx = get_kitchen_profile(u["id"]) if (u and persona == "sweety") else (d.get("kitchen") if persona == "sweety" else None)
-                if kitchen_ctx is not None:
-                    if isinstance(d.get("kitchen"), dict):
-                        if d["kitchen"].get("members"):
-                            kitchen_ctx["members"] = d["kitchen"]["members"]
-                        if d["kitchen"].get("occasion"):
-                            kitchen_ctx["occasion"] = d["kitchen"]["occasion"]
-                    kitchen_ctx["season"] = get_indian_season()
-                sys_txt = build_system_prompt(persona, d.get("edu"), bool(d.get("group_mode")), cfg["custom_prompt"], kitchen_ctx=kitchen_ctx)
+                    req_faith = (d.get("faith") or (u.get("faith") if u else "") or "hindu").strip().lower()
+                group_mode = bool(d.get("group_mode"))
+                last_txt = history[-1].get("content", "")
+                pre = jarvis_pre_audit(history, last_txt, req_faith, persona, group_mode, FAITH_PROFILES)
+                eff_faith = pre["effective_faith"]
+                clean_hist = pre["clean_history"]
+                sys_txt = build_system_prompt(persona, d.get("edu"), group_mode, cfg["custom_prompt"], kitchen_ctx=kitchen_ctx, faith=eff_faith, audit_note=pre["audit_note"])
                 if live_mode:
                     sys_txt += "\n\nLIVE TALK SYNC RULE: Keep reply warm, natural, and crisp (2-4 sentences). At the VERY END, add [SPOKEN]your exact reply converted to smooth spoken Devanagari Hindi with soft commas and '।' (no '...', no emojis)[/SPOKEN] so voice plays instantly."
-                last_txt = history[-1].get("content", "")
                 if cfg["provider"] == "demo":
-                    reply = call_demo(last_txt, persona)
+                    reply = call_demo(last_txt, persona, eff_faith)
                 elif cfg["provider"] == "gemini":
-                    reply = call_gemini(history, cfg["model"], cfg["api_key"], sys_txt, bool(d.get("use_search", False)))
+                    reply = call_gemini(clean_hist, cfg["model"], cfg["api_key"], sys_txt, bool(d.get("use_search", False)))
                 else:
-                    reply = call_openai(history, cfg["model"], cfg["api_key"], sys_txt)
+                    reply = call_openai(clean_hist, cfg["model"], cfg["api_key"], sys_txt)
+
+                def _aud_llm(aud_sys, aud_usr):
+                    ah = [{"role": "user", "content": aud_usr}]
+                    return call_gemini(ah, cfg["model"], cfg["api_key"], aud_sys, False, temp=0.2) if cfg["provider"] == "gemini" else call_openai(ah, cfg["model"], cfg["api_key"], aud_sys, temp=0.2)
+
+                reply = jarvis_post_audit(reply, eff_faith, persona, group_mode, last_txt, FAITH_PROFILES, llm_rewrite_fn=(None if cfg["provider"] == "demo" else _aud_llm))
 
                 spoken_txt = None
                 m_sp = re.search(r"\[SPOKEN\]([\s\S]*?)\[/SPOKEN\]", reply)
                 if m_sp:
-                    spoken_txt = m_sp.group(1).strip()
+                    spoken_txt = sanitize_spoken_for_faith(m_sp.group(1).strip(), eff_faith)
                     reply = re.sub(r"\s*\[SPOKEN\][\s\S]*?\[/SPOKEN\]", "", reply).strip()
 
                 kitchen_updates = {}
