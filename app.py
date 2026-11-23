@@ -224,6 +224,92 @@ def run_dev_bg_tick():
     except Exception:
         pass
 
+def register_telegram_menu():
+    tok = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    if not tok:
+        return
+    try:
+        cmds = [
+            {"command": "announce", "description": "App Popup: /Announce Title | Msg | Link | Btn"},
+            {"command": "clear", "description": "Active App Popup ko band karein"},
+            {"command": "stats", "description": "Live Users & Chats check karein"}
+        ]
+        url = f"https://api.telegram.org/bot{tok}/setMyCommands"
+        req = urllib.request.Request(
+            url,
+            data=json.dumps({"commands": cmds}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            pass
+    except Exception:
+        pass
+
+
+def sync_telegram_commands():
+    tok = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    cid = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    if not tok or not cid:
+        return
+    try:
+        row = db_exec("SELECT value FROM config WHERE key = 'tg_offset'", fetch="one")
+        off = int(row[0]) if row and str(row[0]).isdigit() else 0
+        url = f"https://api.telegram.org/bot{tok}/getUpdates?offset={off}&timeout=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            updates = json.loads(resp.read().decode("utf-8")).get("result") or []
+        max_id = off
+        for up in updates:
+            uid_num = int(up.get("update_id", 0))
+            if uid_num >= max_id:
+                max_id = uid_num + 1
+            msg = up.get("message") or {}
+            sender_id = str((msg.get("chat") or {}).get("id", ""))
+            if sender_id != str(cid):
+                continue
+            txt = (msg.get("text") or "").strip()
+            low = txt.lower()
+
+            if low.startswith("/announce"):
+                rest = txt[len("/announce"):].strip()
+                t_title, t_body, t_link, t_btn = "📢 Saifu Update", "", "", "Open Link"
+                if "|" in rest:
+                    parts = [x.strip() for x in rest.split("|")]
+                    t_title = parts[0] or "📢 Saifu Update"
+                    t_body = parts[1] if len(parts) > 1 else ""
+                    t_link = parts[2] if len(parts) > 2 else ""
+                    t_btn = parts[3] if len(parts) > 3 else "Open Link"
+                else:
+                    m_url = re.search(r"https?://\S+", rest)
+                    t_link = m_url.group(0) if m_url else ""
+                    clean_msg = re.sub(r"https?://\S+", "", rest).strip()
+                    t_body = clean_msg or "Important announcement from Saifu team!"
+
+                db_exec("UPDATE announcements SET active = 0")
+                db_exec(
+                    "INSERT INTO announcements (id, title, body, link, btn_text, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)",
+                    (uuid.uuid4().hex[:12], t_title, t_body, t_link, t_btn, int(time.time()))
+                )
+                link_preview = f"\nLink: {t_link}" if t_link else ""
+                send_telegram_msg(f"✅ <b>App Par Live Kar Diya Gaya Hai!</b>\n<b>{t_title}</b>\n{t_body}{link_preview}")
+
+            elif low.startswith("/clear"):
+                db_exec("UPDATE announcements SET active = 0")
+                send_telegram_msg("🧹 <b>App Popup band kar diya gaya hai!</b> Sabhi users ke liye screen clear ho gayi.")
+
+            elif low.startswith("/stats"):
+                u_cnt = (db_exec("SELECT COUNT(*) FROM users", fetch="one") or [0])[0]
+                c_cnt = (db_exec("SELECT COUNT(*) FROM user_chats", fetch="one") or [0])[0]
+                p_cnt = (db_exec("SELECT COUNT(*) FROM push_subscriptions", fetch="one") or [0])[0]
+                send_telegram_msg(f"📊 <b>Saifu Live Stats:</b>\n👥 Total Users: <b>{u_cnt}</b>\n💬 Total Chats: <b>{c_cnt}</b>\n🔔 Push Subscribers: <b>{p_cnt}</b>")
+
+        if max_id > off:
+            db_exec("INSERT INTO config (key, value) VALUES ('tg_offset', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (str(max_id),))
+    except Exception:
+        pass
+
+
 def get_config():
     rows = db_exec("SELECT key, value FROM config", fetch="all") or []
     cfg = {k: v for k, v in rows}
@@ -675,6 +761,7 @@ class SaifuHandler(BaseHTTPRequestHandler):
             r = db_exec("SELECT id, title, body, link_url, link_label FROM announcements WHERE active = 1 ORDER BY created_at DESC LIMIT 1", fetch="one")
             self.send_json(200, {"announcement": ({"id": r[0], "title": r[1], "body": r[2], "link_url": r[3], "link_label": r[4]} if r else None)})
         elif path == "/api/announcement":
+            sync_telegram_commands()
             row = db_exec("SELECT id, title, message, link_url, link_label FROM announcements WHERE active = 1 ORDER BY created_at DESC LIMIT 1", fetch="one")
             self.send_json(200, {"announcement": {"id": row[0], "title": row[1], "message": row[2], "link_url": row[3], "link_label": row[4]} if row else None})
         elif path == "/api/watchdog":
