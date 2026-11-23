@@ -276,7 +276,47 @@
         <option value="energy">🔊 Energetic</option>
       </select>
     </div>
-    <div class="chat-list" id="chatList"></div>
+        <div class="chat-list" id="chatList"></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
+        <select class="persona-select" id="personaSelect" onchange="onPersonaChange()">
+          <option value="saifu">🤖 Saifu AI</option>
+          <option value="shastri">🪔 Shastri Ji</option>
+          <option value="ansh">📚 Tutor Ansh</option>
+          <option value="sweety">👩‍🍳 Chef Sweety</option>
+        </select>
+      </div>
+      <div class="topbar-right">
+        <select id="sideFaithSelect" class="persona-select" style="max-width:105px;font-size:11px;" onchange="applyFaithUI(this.value)">
+          <option value="universal">🌍 All</option>
+          <option value="hindu">🕉️ Vedic</option>
+          <option value="muslim">☪️ Islamic</option>
+          <option value="sikh">ੴ Sikh</option>
+          <option value="christian">✝️ Christian</option>
+          <option value="jain">☸️ Jain</option>
+          <option value="buddhist">☸️ Buddhist</option>
+        </select>
+        <button class="focus-pill" id="focusPill" onclick="openFocusModal()">⏱️ Focus</button>
+      </div>
+    </header>
+
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome" id="welcomeScreen">
+        <h1 id="welcomeTitle">Saifu AI</h1>
+        <p id="welcomeDesc">Aapka personal smart assistant, tutor aur kitchen guide</p>
+        <div class="suggestions">
+          <div class="suggestion-card" onclick="document.getElementById('promptInput').value=this.textContent;sendMessage()">✨ Roz ka Gyan & Vibe</div>
+          <div class="suggestion-card" onclick="openPptModal()">📊 Ek Professional PPT banao</div>
+          <div class="suggestion-card" onclick="openKitchenModal()">👩‍🍳 Aaj khane me kya banayein?</div>
+          <div class="suggestion-card" onclick="openFaithTool()">🪔 Aaj ka Rashifal & Kundli</div>
+        </div>
+      </div>
+      <div class="messages-wrap" id="messagesWrap" style="display:none;"></div>
+    </div>
     <div class="toolbar-row">
         <button class="tool-pill" id="faithToolBtn" style="border-color:#f59e0b;color:#fcd34d;" onclick="openFaithTool()">🪔 Kundli</button>
         <button class="tool-pill" id="numToolBtn" style="border-color:#a855f7;color:#d8b4fe;" onclick="openNumerologyDirect()">🔢 Num/Tarot</button>
@@ -910,23 +950,22 @@
     };
 
     function applyFaithUI(fKey) {
-      currentFaith = FAITH_UI[fKey] ? fKey : "hindu";
+      currentFaith = (typeof FAITH_UI !== "undefined" && FAITH_UI[fKey]) ? fKey : "hindu";
       try { localStorage.setItem("saifu_guest_faith", currentFaith); } catch (e) {}
-      const cfg = FAITH_UI[currentFaith];
-      document.getElementById("sideFaithSelect").value = currentFaith;
-      document.getElementById("faithToolBtn").textContent = cfg.toolLabel;
-      document.getElementById("numToolBtn").style.display = cfg.showNum ? "inline-flex" : "none";
+      const cfg = (typeof FAITH_UI !== "undefined" && FAITH_UI[currentFaith]) || {};
+      const sfs = document.getElementById("sideFaithSelect") || document.getElementById("guestFaith");
+      if (sfs) sfs.value = currentFaith;
+      const ftb = document.getElementById("faithToolBtn");
+      if (ftb && cfg.toolLabel) ftb.textContent = cfg.toolLabel;
+      const ntb = document.getElementById("numToolBtn");
+      if (ntb) ntb.style.display = cfg.showNum ? "inline-flex" : "none";
       const sel = document.getElementById("personaSelect");
-      Array.from(sel.options).forEach(opt => {
-        if (cfg.labels[opt.value]) opt.textContent = cfg.labels[opt.value];
-      });
-      onPersonaChange();
-    }
-    async function changeFaith(fKey) {
-      applyFaithUI(fKey); startNewChat();
-      if (currentUser) {
-        await fetch("/api/auth/faith", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ faith: currentFaith }) });
+      if (sel && sel.options && cfg.labels) {
+        Array.from(sel.options).forEach(opt => {
+          if (cfg.labels[opt.value]) opt.textContent = cfg.labels[opt.value];
+        });
       }
+    }
     }
     function openFaithTool() {
       if (currentFaith === "muslim") { switchITab("a"); document.getElementById("islamicModal").classList.add("open"); loadIslamicData(); }
@@ -1929,7 +1968,7 @@
         const m = document.getElementById("welcomeBenefitModal");
         if (m) {
           m.classList.add("open");
-          m.style.display = "flex";
+          m.style.display = "grid"; m.classList.add("open");
         }
       }, 350);
     });
