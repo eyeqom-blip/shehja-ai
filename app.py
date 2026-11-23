@@ -24,7 +24,7 @@ from personas import build_system_prompt, detect_tts_config
 from personas import FAITH_PROFILES
 from auditor import jarvis_pre_audit, jarvis_post_audit, sanitize_spoken_for_faith
 from healer import heal_chat_request, heal_llm_call, get_heal_stats, record_heal, maybe_alert_telegram
-from notifier import build_caring_message, ensure_vapid_keys, run_notification_tick, send_push_one
+from notifier import build_caring_message, build_daily_stats_text, ensure_vapid_keys, run_notification_tick, send_push_one, tg_poll_and_daily, tg_send
 from islamic import compute_prayer_times, compute_qibla, compute_zakat, render_qibla_svg
 from vedic import TAROT_DECK, compute_gun_milan, compute_kundli, compute_numerology, get_today_panchang, render_kundli_svg, render_loshu_svg
 
@@ -115,6 +115,7 @@ def init_db():
         "CREATE TABLE IF NOT EXISTS kitchen_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, updated_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS push_subscriptions (id TEXT PRIMARY KEY, sub_json TEXT NOT NULL, faith TEXT NOT NULL, user_name TEXT NOT NULL, is_fasting INTEGER DEFAULT 0, updated_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS sent_notifications (slot_key TEXT PRIMARY KEY, sent_at BIGINT NOT NULL)",
+        "CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, link_url TEXT NOT NULL, link_label TEXT NOT NULL, active INTEGER DEFAULT 1, created_at BIGINT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, link_url TEXT NOT NULL, link_label TEXT NOT NULL, active INTEGER DEFAULT 1, created_at BIGINT NOT NULL)",
     ]
     for s in stmts:
@@ -230,10 +231,12 @@ def get_config():
         "provider": cfg.get("provider", "demo"), "model": (os.environ.get("AI_MODEL") or ("gemini-3.5-flash-lite" if cfg.get("model") == "gemini-3.8-flash" else cfg.get("model", "gemini-3.5-flash-lite"))),
         "api_key": cfg.get("api_key", ""), "admin_pin": cfg.get("admin_pin") or os.environ.get("SAIFU_PIN", "1234"),
         "custom_prompt": cfg.get("custom_prompt", ""),
+        "tg_token": os.environ.get("TELEGRAM_BOT_TOKEN") or cfg.get("tg_token", ""),
+        "tg_chat_id": os.environ.get("TELEGRAM_CHAT_ID") or cfg.get("tg_chat_id", ""),
     }
 
 
-def save_config(provider, model, api_key, new_pin="", custom_prompt=None):
+def save_config(provider, model, api_key, new_pin="", custom_prompt=None, tg_token="", tg_chat_id=""):
     for k, v in [("provider", provider), ("model", model)]:
         db_exec("INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (k, v))
     if api_key:
@@ -242,6 +245,10 @@ def save_config(provider, model, api_key, new_pin="", custom_prompt=None):
         db_exec("INSERT INTO config (key, value) VALUES ('admin_pin', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (new_pin,))
     if custom_prompt is not None:
         db_exec("INSERT INTO config (key, value) VALUES ('custom_prompt', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (custom_prompt,))
+    if tg_token:
+        db_exec("INSERT INTO config (key, value) VALUES ('tg_token', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (tg_token,))
+    if tg_chat_id:
+        db_exec("INSERT INTO config (key, value) VALUES ('tg_chat_id', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (tg_chat_id,))
 
 
 def smtp_configured():
@@ -667,6 +674,21 @@ class SaifuHandler(BaseHTTPRequestHandler):
         elif path == "/api/announcement":
             r = db_exec("SELECT id, title, body, link_url, link_label FROM announcements WHERE active = 1 ORDER BY created_at DESC LIMIT 1", fetch="one")
             self.send_json(200, {"announcement": ({"id": r[0], "title": r[1], "body": r[2], "link_url": r[3], "link_label": r[4]} if r else None)})
+        elif path == "/api/announcement":
+            row = db_exec("SELECT id, title, message, link_url, link_label FROM announcements WHERE active = 1 ORDER BY created_at DESC LIMIT 1", fetch="one")
+            self.send_json(200, {"announcement": {"id": row[0], "title": row[1], "message": row[2], "link_url": row[3], "link_label": row[4]} if row else None})
+        elif path == "/api/watchdog":
+            t0 = time.time()
+            db_exec("SELECT 1", fetch="one")
+            cfg_w = get_config()
+            self.send_json(200, {
+                "status": "ok", "db": "neon" if USE_PG else "sqlite",
+                "db_ms": round((time.time() - t0) * 1000, 1),
+                "uptime_sec": int(time.time() - START_TIME),
+                "gemini_ready": bool(cfg_w.get("api_key")),
+                "sarvam_ready": bool(os.environ.get("SARVAM_API_KEY")),
+                "telegram_ready": bool(cfg_w.get("tg_token") and cfg_w.get("tg_chat_id")),
+            })
         elif path == "/api/push/key":
             pub, _ = ensure_vapid_keys(db_exec)
             self.send_json(200, {"public_key": pub})
@@ -696,7 +718,7 @@ class SaifuHandler(BaseHTTPRequestHandler):
             self.send_json(200, get_today_panchang())
         elif path == "/api/settings":
             cfg = get_config()
-            self.send_json(200, {"provider": cfg["provider"], "model": cfg["model"], "has_key": bool(cfg["api_key"]), "custom_prompt": cfg["custom_prompt"]})
+            self.send_json(200, {"provider": cfg["provider"], "model": cfg["model"], "has_key": bool(cfg["api_key"]), "custom_prompt": cfg["custom_prompt"], "has_tg": bool(cfg.get("tg_token") and cfg.get("tg_chat_id"))})
         elif path.startswith("/api/ppt/"):
             item = _PPT_CACHE.get(urllib.parse.unquote(path[len("/api/ppt/"):]))
             if not item:
@@ -1017,13 +1039,34 @@ class SaifuHandler(BaseHTTPRequestHandler):
                 self.send_json(500, {"error": str(e)})
             return
 
+        if path == "/api/admin/announcement":
+            d = self.read_json()
+            cfg = get_config()
+            if str(d.get("pin") or "").strip() != cfg["admin_pin"]:
+                self.send_json(403, {"error": "Galat Secret Admin Password!"})
+                return
+            if d.get("clear"):
+                db_exec("UPDATE announcements SET active = 0")
+                self.send_json(200, {"ok": True})
+                return
+            title = (d.get("title") or "📢 Naya Update!").strip()
+            msg = (d.get("message") or "").strip()
+            link = (d.get("link_url") or "").strip()
+            lbl = (d.get("link_label") or "Open / Download").strip()
+            db_exec("UPDATE announcements SET active = 0")
+            db_exec("INSERT INTO announcements (id, title, message, link_url, link_label, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)", (f"ann_{int(time.time())}", title, msg, link, lbl, int(time.time())))
+            if cfg.get("tg_token") and cfg.get("tg_chat_id"):
+                tg_send(cfg["tg_token"], cfg["tg_chat_id"], f"📢 <b>Published to App:</b>\n{title}\n{msg}")
+            self.send_json(200, {"ok": True})
+            return
+
         if path == "/api/settings":
             d = self.read_json()
             cfg = get_config()
             if str(d.get("pin") or "").strip() != cfg["admin_pin"]:
                 self.send_json(403, {"error": "Galat Secret Admin Password!"})
                 return
-            save_config(d.get("provider", "demo"), d.get("model", "gemini-3.5-flash-lite"), d.get("api_key", ""), str(d.get("new_pin") or "").strip(), d.get("custom_prompt"))
+            save_config(d.get("provider", "demo"), d.get("model", "gemini-3.5-flash-lite"), d.get("api_key", ""), str(d.get("new_pin") or "").strip(), d.get("custom_prompt"), d.get("tg_token", ""), d.get("tg_chat_id", ""))
             self.send_json(200, {"ok": True})
             return
 

@@ -1,3 +1,4 @@
+import urllib.request
 import base64
 import datetime
 import json
@@ -178,3 +179,84 @@ def run_notification_tick(db_exec, force_slot=None):
         elif status == "gone":
             db_exec("DELETE FROM push_subscriptions WHERE id = ?", (sid,))
     return sent
+
+
+def tg_send(token, chat_id, text):
+    if not token or not chat_id:
+        return False
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {"chat_id": str(chat_id), "text": text, "parse_mode": "HTML"}
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def build_daily_stats_text(db_exec, uptime_sec=0):
+    u_cnt = (db_exec("SELECT COUNT(*) FROM users", fetch="one") or [0])[0]
+    c_cnt = (db_exec("SELECT COUNT(*) FROM user_chats", fetch="one") or [0])[0]
+    m_cnt = (db_exec("SELECT COUNT(*) FROM user_messages", fetch="one") or [0])[0]
+    p_cnt = (db_exec("SELECT COUNT(*) FROM push_subscriptions", fetch="one") or [0])[0]
+    now_ist = _ist_now().strftime("%d %b %Y, %I:%M %p IST")
+    return (
+        f"📊 <b>Shehja SR — Daily Watchdog Report</b>\n"
+        f"🕒 {now_ist}\n"
+        f"👥 Total Registered Users: <b>{u_cnt}</b>\n"
+        f"💬 Total Saved Chats: <b>{c_cnt}</b> ({m_cnt} msgs)\n"
+        f"🔔 Daily Push Subscribers: <b>{p_cnt}</b>\n"
+        f"⏱️ Server Uptime: <b>{uptime_sec // 60} mins</b>\n"
+        f"✅ Status: Healthy & Online"
+    )
+
+
+def tg_poll_and_daily(db_exec, token, chat_id, uptime_sec=0):
+    if not token or not chat_id:
+        return
+    # 1. Daily Morning Auto-Stats at 08:30 - 09:00 IST
+    now = _ist_now()
+    hm = now.hour * 60 + now.minute
+    if 8 * 60 + 30 <= hm <= 9 * 60:
+        skey = f"{now.strftime('%Y-%m-%d')}_tg_morning_stats"
+        if not db_exec("SELECT slot_key FROM sent_notifications WHERE slot_key = ?", (skey,), fetch="one"):
+            db_exec("INSERT INTO sent_notifications (slot_key, sent_at) VALUES (?, ?) ON CONFLICT (slot_key) DO NOTHING", (skey, int(time.time())))
+            tg_send(token, chat_id, build_daily_stats_text(db_exec, uptime_sec))
+
+    # 2. Poll incoming Telegram commands from Rayan (/stats, /announce Title | Msg | URL, /clear)
+    try:
+        off_row = db_exec("SELECT value FROM config WHERE key = 'tg_offset'", fetch="one")
+        offset = int(off_row[0]) if off_row and off_row[0].isdigit() else 0
+        url = f"https://api.telegram.org/bot{token}/getUpdates?offset={offset}&timeout=0"
+        with urllib.request.urlopen(url, timeout=8) as r:
+            res = json.loads(r.read().decode("utf-8"))
+        max_id = offset
+        for upd in res.get("result") or []:
+            uid = int(upd.get("update_id", 0))
+            if uid >= max_id:
+                max_id = uid + 1
+            msg = upd.get("message") or {}
+            if str((msg.get("chat") or {}).get("id", "")) != str(chat_id):
+                continue
+            txt = (msg.get("text") or "").strip()
+            if txt == "/stats":
+                tg_send(token, chat_id, build_daily_stats_text(db_exec, uptime_sec))
+            elif txt.startswith("/announce "):
+                body = txt[len("/announce "):].strip()
+                parts = [x.strip() for x in body.split("|")]
+                title = parts[0] if len(parts) >= 1 and parts[0] else "📢 Naya Update!"
+                amsg = parts[1] if len(parts) >= 2 else title
+                alink = parts[2] if len(parts) >= 3 else ""
+                db_exec("UPDATE announcements SET active = 0")
+                db_exec(
+                    "INSERT INTO announcements (id, title, message, link_url, link_label, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)",
+                    (f"ann_{int(time.time())}", title, amsg, alink, "Open / Download", int(time.time())),
+                )
+                tg_send(token, chat_id, f"✅ Announcement Live kar diya gaya hai:\n<b>{title}</b>\n{amsg}")
+            elif txt == "/clear":
+                db_exec("UPDATE announcements SET active = 0")
+                tg_send(token, chat_id, "🧹 Active announcement/ad hata diya gaya hai.")
+        if max_id > offset:
+            db_exec("INSERT INTO config (key, value) VALUES ('tg_offset', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (str(max_id),))
+    except Exception:
+        pass

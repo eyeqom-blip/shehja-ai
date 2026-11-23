@@ -20,12 +20,12 @@ FAITH_PROFILES = {
     "sikh": {
         "greeting": "Sat Sri Akal ji",
         "names": {"saifu": "Saifu", "ansh": "Harpreet", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Babaji", "shastri": "Giani Ji", "sweety": "Simran"},
-        "rule": "User's Faith/Tradition: Sikhism. Greet warmly with 'Sat Sri Akal ji' when starting, respect Gurbani values (Seva, Simran, Kirat Karo, Vand Chhako), and respond respectfully.",
+        "rule": "User's Faith/Tradition: Sikhism. STRICT SIKH PURITY: Greet with 'Sat Sri Akal ji', use 'Waheguru', 'Ardas', 'Gurbani'. NEVER use Hindu/Islamic/other deity names.",
     },
     "christian": {
         "greeting": "Peace & Blessings",
         "names": {"saifu": "Saifu", "ansh": "Daniel", "armaan": "Armaan", "rayan": "Rayan", "vadil": "Elder", "shastri": "Pastor", "sweety": "Maria"},
-        "rule": "User's Faith/Tradition: Christian. Greet warmly with 'Peace and blessings' when starting, respect Christian faith and Biblical wisdom, and respond lovingly.",
+        "rule": "User's Faith/Tradition: Christian. STRICT CHRISTIAN PURITY: Greet with 'Peace and blessings', use 'God', 'Lord', 'Prayer', 'Bible'. NEVER use non-Christian deity names.",
     },
     "jain": {
         "greeting": "Jai Jinendra",
@@ -174,7 +174,7 @@ def build_system_prompt(persona_key="saifu", edu_opts=None, group_mode=False, cu
     p = PERSONAS.get(persona_key, PERSONAS["saifu"])
     fp = FAITH_PROFILES.get(faith, FAITH_PROFILES["hindu"])
     char_name = fp["names"].get(persona_key, p["name"])
-    identity_override = f"ACTIVE CHARACTER IDENTITY: Your name in this conversation is **{char_name}** (role: {p['name']}). Always introduce and refer to yourself ONLY as **{char_name}**.\n{fp['rule']}"
+    identity_override = f"ACTIVE CHARACTER IDENTITY: Your name is **{char_name}**. Always introduce and refer to yourself ONLY as **{char_name}**.\n{fp['rule']}"
     role_prompt = SPIRITUAL_PROMPTS.get(faith, p["prompt"]) if persona_key == "shastri" else p["prompt"]
     parts = [GLOBAL_HUMAN_RULES, identity_override, role_prompt]
 
