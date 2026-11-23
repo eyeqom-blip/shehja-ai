@@ -141,6 +141,17 @@
     body[data-mood="study"] .chat-container{background:radial-gradient(circle at top,rgba(59,130,246,.09),transparent 70%)}
     .msg-row.ai .msg-bubble{background:rgba(27,30,38,.92);backdrop-filter:blur(8px);box-shadow:0 4px 18px rgba(0,0,0,.22)}
     .ann-card{border:1px solid #10a37f;background:linear-gradient(155deg,#102620,#171b24);text-align:center}
+  
+    body[data-mood="calm"]{background:radial-gradient(circle at top right,#0b2528,#11151d 65%)}
+    body[data-mood="happy"]{background:radial-gradient(circle at top right,#102a22,#14171f 65%)}
+    body[data-mood="sad"]{background:radial-gradient(circle at top right,#261c14,#13141a 65%)}
+    body[data-mood="study"]{background:radial-gradient(circle at top right,#101d36,#12151e 65%)}
+    .msg-row.ai .msg-bubble{background:rgba(27,31,42,.88);backdrop-filter:blur(8px);box-shadow:0 4px 18px rgba(0,0,0,.22)}
+    .msg-row.user .msg-bubble{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+    .side-tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 12px 10px}
+    .side-tool{padding:8px 6px;background:#1a1d26;border:1px solid #2b303c;border-radius:9px;color:#e2e8f0;font-size:12px;cursor:pointer;text-align:center}
+    .side-tool:hover{border-color:var(--ac);background:#222632}
+    .announce-card{background:linear-gradient(155deg,#13222d,#181b24);border:1.5px solid var(--ac);box-shadow:0 16px 40px rgba(0,0,0,.6)}
   </style>
 </head>
 <body data-theme="saifu">
@@ -238,112 +249,35 @@
       <div><span>Saifu — SR</span><span class="brand-sub" id="userLabel">Guest Mode</span></div>
     </div>
     <button class="new-chat-btn" onclick="startNewChat()"><span>＋</span> Naya Chat</button>
+    <div style="padding:0 12px 4px;font-size:11px;color:#9aa3b2;text-transform:uppercase;letter-spacing:.7px;">🧰 Smart Tools</div>
+    <div class="side-tools-grid">
+      <button class="side-tool" onclick="toggleSidebar(false);openPptModal()">📊 Make PPT</button>
+      <button class="side-tool" onclick="toggleSidebar(false);openXlsxModal()">📗 Excel Sheet</button>
+      <button class="side-tool" onclick="toggleSidebar(false);openStudioModal()">🎨 AI Studio</button>
+      <button class="side-tool" onclick="toggleSidebar(false);openCalcModal()">🧮 Calculator</button>
+      <button class="side-tool" onclick="toggleSidebar(false);openFocusModal()">⏱️ Focus Timer</button>
+      <button class="side-tool" id="musicSideBtn" onclick="toggleBgMusic()">🎵 Music: OFF</button>
+    </div>
+    <div style="padding:0 12px 8px;">
+      <select class="voice-select" id="voiceTone" style="width:100%;padding:7px 10px;border-radius:9px;">
+        <option value="auto">🔊 Voice: Smart Emotion</option>
+        <option value="priya">🔊 Priya (Warm Natural)</option>
+        <option value="simran">🔊 Simran (Soft Deep)</option>
+        <option value="ritu">🔊 Ritu (Sweet Friend)</option>
+        <option value="kavya">🔊 Kavya (Lively)</option>
+        <option value="soft">🔊 Soft Care Pace</option>
+        <option value="teacher">🔊 Clear Tutor</option>
+        <option value="energy">🔊 Energetic</option>
+      </select>
+    </div>
     <div class="chat-list" id="chatList"></div>
-    <div class="sidebar-tools">
-      <button class="st-pill" id="faithToolBtn" style="border-color:#f59e0b;color:#fcd34d;" onclick="toggleSidebar(false);openFaithTool()">🪔 Kundli</button>
-      <button class="st-pill" id="numToolBtn" style="border-color:#a855f7;color:#d8b4fe;" onclick="toggleSidebar(false);openNumerologyDirect()">🔢 Num/Tarot</button>
-      <button class="st-pill" style="border-color:#fb7185;color:#fda4af;" onclick="toggleSidebar(false);openKitchenModal()">👩‍🍳 Kitchen</button>
-      <button class="st-pill" onclick="toggleSidebar(false);openPptModal()">📊 PPT</button>
-      <button class="st-pill" onclick="toggleSidebar(false);openXlsxModal()">📗 Excel</button>
-      <button class="st-pill" onclick="toggleSidebar(false);openStudioModal()">🎨 Studio</button>
-      <button class="st-pill" onclick="toggleSidebar(false);openCalcModal()">🧮 Calc</button>
-      <button class="st-pill" id="searchToggleSide" onclick="toggleSearch()">🌐 Search</button>
-    </div>
-    <div class="sidebar-footer">
-            <button class="side-btn" id="pushBtn" onclick="enableDailyCarePush()"><span>🔔 Daily Care Alerts</span><span class="mode-badge" id="pushBadge">OFF</span></button>
-      <button class="side-btn" id="fastBtn" onclick="toggleFastingToday()"><span>🌙 Aaj Roza / Vrat / Atthai</span><span class="mode-badge" id="fastBadge">OFF</span></button>
-      <button class="side-btn" onclick="testPushNow()"><span>📨 Test Notification</span><span class="mode-badge">Try</span></button>
-      <select id="sideFaithSelect" onchange="changeFaith(this.value)" style="width:100%;padding:8px 10px;background:#161922;border:1px solid #323744;border-radius:9px;color:#eef1f6;font-size:12.5px;">
-        <option value="hindu">🕉️ Dharm: Hindu / Sanatan</option>
-        <option value="muslim">☪️ Faith: Muslim / Islam</option>
-        <option value="sikh">🪯 Faith: Sikh</option>
-        <option value="christian">✝️ Faith: Christian</option>
-                    <option value="jain">🙏 Jain (Jai Jinendra)</option>
-            <option value="maharashtrian">🚩 Maharashtrian (Namaskar)</option>
-            <option value="vaishnav">🦚 Vaishnav (Jai Shri Krishna)</option>
-            <option value="swaminarayan">🙏 Swaminarayan (Jay Swaminarayan)</option>
-            <option value="sindhi">🌊 Sindhi (Jai Jhulelal)</option>
-            <option value="universal">🌍 Mode: Universal</option>
-      </select>
-      <button class="side-btn" id="installBtn" style="display:none;" onclick="installApp()"><span>📲 Install SR App</span><span class="mode-badge">App</span></button>
-      <button class="side-btn" id="authSideBtn" onclick="openAuthGate()"><span>🔐 Sign In / Switch</span><span class="mode-badge">Sync</span></button>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="topbar">
-      <div class="topbar-left">
-        <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
-        <select class="persona-select" id="personaSelect" onchange="onPersonaChange()">
-          <option value="saifu">💬 Saifu (Dost)</option>
-          <option value="ansh">📚 Ansh (Tutor)</option>
-          <option value="armaan">💻 Armaan (Coder)</option>
-          <option value="rayan">🌟 Rayan (All-Rounder)</option>
-          <option value="vadil">🤍 Vadil (Safe Space)</option>
-          <option value="shastri">🪔 Shastri Ji (Pandit)</option>
-          <option value="sweety">👩‍🍳 Sweety (Kitchen)</option>
-        </select>
-      </div>
-      <div class="topbar-right">
-        <button class="tool-pill" id="groupToggle" onclick="toggleGroup()">🤝 Group</button>
-        <button class="live-pill" id="liveTalkBtn" onclick="toggleLiveTalk()">📞 Live</button>
-        <button class="focus-pill" id="focusBtn" onclick="openFocusModal()">⏱️ Focus</button>
-      </div>
-    </header>
-
-    <div class="edu-bar" id="eduBar">
-      <select id="eduBoard"><option value="CBSE">CBSE</option><option value="GSEB">GSEB</option></select>
-      <select id="eduStd"><option value="Std 8">Std 8</option><option value="Std 9">Std 9</option><option value="Std 10">Std 10</option><option value="Std 11">Std 11</option><option value="Std 12">Std 12</option></select>
-      <select id="eduStream"><option value="Science">Science</option><option value="Commerce">Commerce</option><option value="Arts">Arts</option></select>
-      <input type="text" id="eduSubject" placeholder="Subject (e.g. Maths)" style="width:115px;" />
-      <label><input type="checkbox" id="eduKnowChk" /> 🎓 EduKnow (College+)</label>
-    </div>
-
-        <div class="edu-bar" id="sweetyBar" style="background:#261219;border-color:#881337;">
-      <label style="color:#fda4af;">👥 Log: <input type="number" id="sweetyMembers" min="1" max="100" value="4" style="width:52px;border-color:#9f1239;" onchange="syncSweetyQuick()" /></label>
-      <select id="sweetyOccasion" style="border-color:#9f1239;" onchange="syncSweetyQuick()">
-        <option value="Single Person Easy (15-min quick)">👤 Single (Easy Cook)</option>
-        <option value="Regular Family" selected>🏠 Regular Family</option>
-        <option value="Mahemaan Special (Party/Guest Menu)">🎉 Mahemaan Special</option>
-      </select>
-      <button class="tool-pill" style="border-color:#10a37f;color:#34d399;" onclick="askSweetySabzi()">🥬 Sabzi List</button>
-      <button class="tool-pill" style="border-color:#fb7185;color:#fda4af;" onclick="openKitchenModal()">⚙️ Setup</button>
-    </div>
-
-    <div class="chat-container" id="chatContainer">
-      <div class="welcome" id="welcomeScreen">
-        <img src="/icon.svg?v=5" alt="SR" onclick="secretLogoTap()" style="width:72px;height:72px;border-radius:18px;margin:0 auto 12px;display:block;box-shadow:0 8px 24px rgba(16,185,129,.3);" />
-        <h1 id="welcomeTitle">Haan ji, main Saifu hoon 🌸</h1>
-        <p id="welcomeDesc">Batao aaj kya haal hai? Kuch padhna ho, code banana ho, mann halka karna ho, ya presentation/notes chahiye — sab milkar karenge!</p>
-        <div class="suggestions">
-          <div class="suggestion-card" onclick="openPptModal()">📊 Unique PPT Banao (.pptx)</div>
-          <div class="suggestion-card" onclick="openStudioModal()">🎨 Image / Video & Song Studio</div>
-          <div class="suggestion-card" onclick="openCalcModal()">🧮 Sci-Fi Student Calculator</div>
-          <div class="suggestion-card" onclick="openXlsxModal()">📗 Excel Sheet Banao (.xlsx)</div>
-        </div>
-      </div>
-      <div class="messages-wrap" id="messagesWrap" style="display:none;"></div>
-    </div>
-
-    <div class="input-area">
-      <div class="live-banner" id="liveBanner"><span id="liveStatus">🎙️ Sun rahi hoon... (Boliye)</span><div style="display:flex;gap:6px;"><button onclick="interruptAndListen()">🎙️ Abhi Bolo</button><button onclick="toggleLiveTalk()">⏹️ Band</button></div></div>
-      <div class="toolbar-row" style="justify-content:space-between;">
-        <div style="display:flex;gap:6px;align-items:center;">
-          <button class="tool-pill" onclick="toggleSidebar(true)" style="border-color:var(--ac);color:#a7f3d0;">🧰 Tools</button>
-          <button class="tool-pill" onclick="document.getElementById('camInput').click()">📸</button>
-          <button class="tool-pill" onclick="document.getElementById('imgInput').click()">🖼️</button>
-          <button class="tool-pill" id="musicBtn" onclick="toggleBgMusic()">🎵 Music: OFF</button>
-        </div>
-        <select class="voice-select" id="voiceTone">
-          <option value="auto">🔊 Voice: Smart</option>
-          <option value="priya">🔊 Priya</option>
-          <option value="simran">🔊 Simran</option>
-          <option value="ritu">🔊 Ritu</option>
-          <option value="kavya">🔊 Kavya</option>
-          <option value="soft">🔊 Soft</option>
-          <option value="teacher">🔊 Tutor</option>
-          <option value="energy">🔊 Energy</option>
-        </select>
+    <div class="toolbar-row">
+        <button class="tool-pill" id="faithToolBtn" style="border-color:#f59e0b;color:#fcd34d;" onclick="openFaithTool()">🪔 Kundli</button>
+        <button class="tool-pill" id="numToolBtn" style="border-color:#a855f7;color:#d8b4fe;" onclick="openNumerologyDirect()">🔢 Num/Tarot</button>
+        <button class="tool-pill" style="border-color:#fb7185;color:#fda4af;" onclick="openKitchenModal()">👩‍🍳 Kitchen</button>
+        <button class="tool-pill" id="searchToggle" onclick="toggleSearch()">🌐 Search</button>
+        <button class="tool-pill" onclick="document.getElementById('camInput').click()">📸 Cam</button>
+        <button class="tool-pill" onclick="document.getElementById('imgInput').click()">🖼️ Photo</button>
         <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImagePick(event)" />
         <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="handleImagePick(event)" />
       </div>
@@ -626,6 +560,20 @@
     </div>
   </div>
 
+    <div class="modal-backdrop" id="announceModal">
+    <div class="modal announce-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h2 id="annTitle" style="margin:0;color:#34d399;">📢 New Update!</h2>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="dismissAnnouncement()">✕</button>
+      </div>
+      <p id="annMsg" style="font-size:14.5px;line-height:1.6;color:#e2e8f0;margin-bottom:14px;white-space:pre-wrap;"></p>
+      <div style="display:flex;gap:8px;">
+        <a id="annLink" href="#" target="_blank" class="dl-btn" style="flex:1;text-align:center;margin-top:0;display:none;">⬇️ Open / Download</a>
+        <button class="btn-secondary" onclick="dismissAnnouncement()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="settingsModal">
     <div class="modal">
       <h2>🔐 Secret Owner Admin</h2>
@@ -637,6 +585,15 @@
       <div class="form-group"><label>📢 App Update / Ad Popup (Optional Title)</label><input type="text" id="admAnnTitle" placeholder="Khali chhodein ya title likhein..." /></div>
       <div class="form-group"><label>Update / Ad Message + Download Link</label><input type="text" id="admAnnBody" placeholder="Short message..." style="margin-bottom:5px;" /><input type="text" id="admAnnLink" placeholder="https://download-link..." /></div>
       <div class="form-group"><label>New Secret Password (Optional)</label><input type="password" id="newPinInput" placeholder="Badalna ho toh likhein..." /></div>
+      <hr style="border-color:#2e3340;margin:10px 0;"/>
+      <div style="font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:8px;">🤖 Telegram Dev Mode & App Broadcast</div>
+      <div class="form-group"><label>Telegram Bot Token (<span id="tgStatusText">Optional</span>)</label><input type="password" id="tgTokenInput" placeholder="@BotFather token..." /></div>
+      <div class="form-group"><label>Your Telegram Chat ID</label><input type="text" id="tgChatIdInput" placeholder="e.g. 123456789" /></div>
+      <div class="form-group"><label>📢 Publish Update / App Link / Ad to Users</label><input type="text" id="annPubTitle" placeholder="Title (e.g. New App Launch!)" style="margin-bottom:5px;" /><textarea id="annPubMsg" rows="2" placeholder="Details / Offer likhein..."></textarea><input type="text" id="annPubLink" placeholder="Download / App Link (https://...)" style="margin-top:5px;" /></div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <button class="btn-primary" style="flex:1;font-size:12px;" onclick="publishAnnAdmin(false)">📢 Publish Popup</button>
+        <button class="btn-secondary" style="font-size:12px;" onclick="publishAnnAdmin(true)">🧹 Clear Popup</button>
+      </div>
       <div class="error-msg" id="settingsError"></div>
       <div class="modal-actions"><button class="btn-secondary" onclick="closeModal('settingsModal')">Cancel</button><button class="btn-primary" onclick="saveSettingsUI()">Save</button></div>
     </div>
@@ -922,7 +879,7 @@
       onPersonaChange();
     }
     async function changeFaith(fKey) {
-      applyFaithUI(fKey);
+      applyFaithUI(fKey); startNewChat();
       if (currentUser) {
         await fetch("/api/auth/faith", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ faith: currentFaith }) });
       }
@@ -1163,13 +1120,13 @@
       focusInterval = setInterval(() => {
         focusSecs--;
         const m = String(Math.floor(focusSecs / 60)).padStart(2, "0"), s = String(focusSecs % 60).padStart(2, "0");
-        document.getElementById("focusBtn").textContent = "⏱️ " + m + ":" + s;
+        if(document.getElementById("focusBtn"))document.getElementById("focusBtn").textContent = "⏱️ " + m + ":" + s;
         document.getElementById("focusDisplay").textContent = m + ":" + s;
         if (focusSecs === half) notifyUser("Shabaash! Aadha time poora ho gaya — bas thoda aur focus rakho!");
-        if (focusSecs <= 0) { clearInterval(focusInterval); document.getElementById("focusBtn").textContent = "⏱️ Focus"; notifyUser("Great job! Focus session complete ho gaya — ab 5 minute break le lo!"); }
+        if (focusSecs <= 0) { clearInterval(focusInterval); if(document.getElementById("focusBtn"))document.getElementById("focusBtn").textContent = "⏱️ Focus"; notifyUser("Great job! Focus session complete ho gaya — ab 5 minute break le lo!"); }
       }, 1000);
     }
-    function stopFocus() { clearInterval(focusInterval); document.getElementById("focusBtn").textContent = "⏱️ Focus"; document.getElementById("focusDisplay").textContent = "25:00"; }
+    function stopFocus() { clearInterval(focusInterval); if(document.getElementById("focusBtn"))document.getElementById("focusBtn").textContent = "⏱️ Focus"; document.getElementById("focusDisplay").textContent = "25:00"; }
     function notifyUser(msg) {
       if (welcomeScreen.style.display !== "none") { welcomeScreen.style.display = "none"; messagesWrap.style.display = "flex"; }
       appendMessageDOM("assistant", "⏱️ **Focus Check-in:** " + msg); scrollToBottom();
@@ -1211,7 +1168,7 @@
       window.speechSynthesis.cancel();
       if (btn.dataset.playing === "1") { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; return; }
       document.querySelectorAll(".speak-btn").forEach(b => { b.dataset.playing = "0"; b.textContent = "🔊 Suno"; });
-      btn.dataset.playing = "1"; btn.textContent = "⏳ Loading..."; duckMusic(true);
+      btn.dataset.playing = "1"; btn.textContent = "⏳ Loading..."; duckMusic(true); duckMusic(true);
       try {
         const res = await fetch("/api/tts", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -1326,7 +1283,7 @@
       }
       const chat = chats.find(c => c.id === currentChatId); if (!chat.messages) chat.messages = [];
       const uMsg = { role: "user", content: text || "Is photo ki har detail dhyaan se samjhao.", image: imgB64, mime: imgMime, imgUrl: previewUrl };
-      chat.messages.push(uMsg); renderChatList(); appendMessageDOM("user", uMsg.content, previewUrl);
+      chat.messages.push(uMsg); renderChatList(); detectMoodAndTheme(uMsg.content); appendMessageDOM("user", uMsg.content, previewUrl);
       const { bubble: aiB, col: aiC } = appendMessageDOM("assistant", "");
       aiB.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>'; scrollToBottom();
       const hist = chat.messages.slice(-12).map((m, idx, arr) => ({ role: m.role, content: m.content, image: (idx === arr.length - 1) ? (m.image || "") : "", mime: m.mime || "image/jpeg" }));
@@ -1348,7 +1305,7 @@
         const data = await res.json(); if (!res.ok) throw new Error(data.error || "Server error");
         if (data.chat_id) { chat.id = data.chat_id; currentChatId = data.chat_id; }
         chat.messages.push({ role: "assistant", content: data.reply }); renderChatList();
-        aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
+        detectMoodAndTheme(data.reply); aiB.innerHTML = formatMarkdown(data.reply); addActionButtons(aiC, data.reply);
         detectAndSetMood(text + " " + data.reply);
         scrollToMsgTop(aiB.closest(".msg-row"));
         if (data.kitchen_updates) {
@@ -1877,11 +1834,11 @@
     }
     async function _unusedOldSpeak(btn, rawText) {
       if (!isLiveTalk) return;
-      isAiSpeaking = true;
+      isAiSpeaking = true; duckMusic(true);
       setLiveStatus("🔊 Jawab bol rahi hoon...");
       if (btn) { btn.dataset.playing = "1"; btn.textContent = "⏹️ Roko"; }
       const finishSpeak = () => {
-        isAiSpeaking = false;
+        isAiSpeaking = false; duckMusic(false);
         if (btn) { btn.dataset.playing = "0"; btn.textContent = "🔊 Suno"; }
         if (isLiveTalk) setTimeout(startLiveListening, 450);
       };
