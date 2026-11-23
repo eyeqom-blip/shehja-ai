@@ -1,3 +1,5 @@
+import os
+import urllib.request
 import urllib.request
 import base64
 import datetime
@@ -70,7 +72,81 @@ def _greet_prefix(faith):
     }.get(faith, "Namaste")
 
 
-def build_caring_message(slot, faith, user_name, is_fasting=False):
+
+UNIQUE_THEMES = [
+    "Gratitude & Shukr", "Inner Peace & Sukun", "Self-Belief & Himmat", "Patience & Sabr",
+    "Kindness to Others", "Letting Go of Yesterday", "Small Daily Progress", "Family Love & Care",
+    "Strength in Hard Times", "Calm Mind & Focus", "Hope for Tomorrow", "Honesty & Integrity",
+    "Smiling Through Challenges", "Trusting Timing", "Health & Self-Care", "Forgiveness & Light Heart",
+    "Discipline & Consistency", "Learning from Mistakes", "Silence & Clarity", "Turning Pain into Power",
+    "Appreciating Little Things", "Courage to Restart", "Positive Energy", "Humble Confidence",
+    "Protecting Your Peace", "Helping Someone Today", "Deep Breath & Calm", "Staying Grounded",
+    "Joy in Today", "Never Giving Up"
+]
+
+BACKUP_THOUGHTS = [
+    "Har nayi subah ek naya mauka hoti hai, kal ki chinta chhod kar aaj muskurane ki koshish karo.",
+    "Chhote-chhote kadam hi ek din badi manzil tak le jaate hain, bas chalte rehna zaroori hai.",
+    "Jab mann shant hota hai, toh mushkil se mushkil raasta bhi aasaan dikhne lagta hai.",
+    "Apni tulna kisi aur se mat karo, har insaan ka waqt aur safar apna hota hai.",
+    "Aaj kisi ek insaan ke chehre par muskaan laane ki wajah bano, din khud-ba-khud khoobsurat ho jayega.",
+    "Jo cheez aapke control mein nahi hai uska bojh dil se utaar do, sukoon wahin se shuru hota hai.",
+    "Har mushkil waqt humein andar se aur mazboot banane aata hai, himmat kabhi mat haarna.",
+    "Subah ki pehli soch jitni saaf aur positive hogi, poora din utna hi halka aur behtar guzrega.",
+    "Khud par bharosa rakho, aapke andar woh saari taqat hai jo aapko aage le ja sakti hai.",
+    "Sabr aur shukr do aise pankh hain jo har toofan ke upar se udaan bharna sikha dete hain.",
+    "Galtiyon se daro mat, har galti aane wali safalta ki ek nayi seekh hoti hai.",
+    "Parivaar aur apno ke saath bitaye do pyaar bhare pal duniya ki har daulat se badhkar hote hain.",
+]
+
+
+def get_daily_unique_thought(db_exec):
+    now = _ist_now()
+    date_str = now.strftime("%Y-%m-%d")
+    row = db_exec("SELECT thought FROM daily_thoughts WHERE date_str = ?", (date_str,), fetch="one")
+    if row and row[0]:
+        return row[0]
+
+    recent = db_exec("SELECT thought FROM daily_thoughts ORDER BY date_str DESC LIMIT 30", fetch="all") or []
+    recent_set = {r[0] for r in recent}
+    doy = now.timetuple().tm_yday
+    theme = UNIQUE_THEMES[(doy + now.year) % len(UNIQUE_THEMES)]
+
+    thought = ""
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        r_key = db_exec("SELECT value FROM config WHERE key = 'api_key'", fetch="one")
+        if r_key:
+            api_key = r_key[0].strip()
+
+    if api_key:
+        try:
+            avoid = " | ".join(list(recent_set)[:6])
+            prompt = (
+                f"Write ONE unique, heartwarming, soulful morning positive-vibes life thought in natural Hinglish (Roman script) "
+                f"for date {date_str} on the theme '{theme}'. "
+                f"Rules: Maximum 2 short sentences (20-30 words total). Deeply human, uplifting, non-preachy, NO emojis, NO hashtags, NO quotes around it. "
+                f"Must be completely different from these recent thoughts: {avoid}"
+            )
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + api_key
+            payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.95}}
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                d = json.loads(resp.read().decode("utf-8"))
+            cand = d["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"').strip("'")
+            if cand and cand not in recent_set:
+                thought = cand
+        except Exception:
+            pass
+
+    if not thought:
+        thought = BACKUP_THOUGHTS[(doy + now.year) % len(BACKUP_THOUGHTS)]
+
+    db_exec("INSERT INTO daily_thoughts (date_str, thought) VALUES (?, ?) ON CONFLICT (date_str) DO NOTHING", (date_str, thought))
+    return thought
+
+
+def build_caring_message(slot, faith, user_name, is_fasting=False, thought_txt=''):
     nm = (user_name or "Dost").split()[0]
     greet = _greet_prefix(faith)
     maa = _kitchen_maa_name(faith)
@@ -83,9 +159,10 @@ def build_caring_message(slot, faith, user_name, is_fasting=False):
     jain_parv_tmr = any(x in tithi_tmr for x in ("Ashtami", "Chaturdashi", "Purnima"))
 
     if slot == "morning":
+        th = thought_txt or BACKUP_THOUGHTS[_ist_now().timetuple().tm_yday % len(BACKUP_THOUGHTS)]
         return (
-            "✨ Saifu — Daily Positive Vibes",
-            f"{greet} {nm}! Nayi subah aur nayi umeed ke saath din ki shuruaat karo. Khud par bharosa rakho, aaj kuch bahut accha hoga! — Saifu ✨",
+            "☀️ Good Morning • Saifu",
+            f"{greet} {nm}! {th} — Saifu ✨",
         )
 
     if slot == "lunch":
@@ -169,8 +246,9 @@ def run_notification_tick(db_exec, force_slot=None):
         return 0
     subs = db_exec("SELECT id, sub_json, faith, user_name, is_fasting FROM push_subscriptions", fetch="all") or []
     sent = 0
+    thought_today = get_daily_unique_thought(db_exec) if slot == "morning" else ""
     for sid, sjson, faith, uname, fast in subs:
-        msg = build_caring_message(slot, faith or "hindu", uname or "Dost", bool(fast))
+        msg = build_caring_message(slot, faith or "hindu", uname or "Dost", bool(fast), thought_txt=thought_today)
         if not msg:
             continue
         ok, status = send_push_one(sjson, msg[0], msg[1], vapid_priv)
