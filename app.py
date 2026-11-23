@@ -64,30 +64,58 @@ def db_connect():
     return sqlite3.connect(DB_PATH)
 
 
+import threading
+_PG_CONN = None
+_DB_LOCK = threading.Lock()
+
+def get_db():
+    global _PG_CONN
+    if not USE_PG:
+        return sqlite3.connect(DB_PATH)
+    with _DB_LOCK:
+        if _PG_CONN is not None:
+            try:
+                cur = _PG_CONN.cursor()
+                cur.execute("SELECT 1")
+                cur.fetchone()
+                return _PG_CONN
+            except Exception:
+                try:
+                    _PG_CONN.close()
+                except Exception:
+                    pass
+                _PG_CONN = None
+        _PG_CONN = db_connect()
+        return _PG_CONN
+
 def db_exec(sql, params=(), fetch=None):
     q = sql.replace("?", "%s") if USE_PG else sql
     last_ex = None
     for attempt in range(2):
-        conn = None
         try:
-            conn = db_connect()
+            conn = get_db()
             cur = conn.cursor()
             cur.execute(q, params)
             res = cur.fetchone() if fetch == "one" else (cur.fetchall() if fetch == "all" else None)
             conn.commit()
+            if not USE_PG:
+                conn.close()
             return res
         except Exception as e:
             last_ex = e
+            global _PG_CONN
+            if USE_PG:
+                with _DB_LOCK:
+                    try:
+                        if _PG_CONN:
+                            _PG_CONN.close()
+                    except Exception:
+                        pass
+                    _PG_CONN = None
             if attempt == 0:
-                time.sleep(0.8)
+                time.sleep(0.1)
                 continue
             raise last_ex
-        finally:
-            if conn:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
 
 def hash_secret(plain):
     salt = os.urandom(16).hex()
