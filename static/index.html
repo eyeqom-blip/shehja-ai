@@ -504,7 +504,36 @@
     </div>
   </div>
 
-    <div class="modal-backdrop" id="annModal">
+      <!-- Welcome Benefits & Download Popup -->
+  <div class="modal-backdrop" id="welcomeBenefitModal">
+    <div class="modal" style="background:radial-gradient(circle at top,#0f2d27,#161922 75%);border:1.5px solid #10a37f;box-shadow:0 20px 50px rgba(0,0,0,.7);max-width:420px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:11px;background:rgba(16,163,127,.25);color:#34d399;padding:3px 9px;border-radius:99px;font-weight:700;">🌟 WELCOME TO SAIFU</span>
+        <button class="btn-secondary" style="padding:3px 9px;" onclick="closeModal('welcomeBenefitModal')">✕</button>
+      </div>
+      <div style="text-align:center;margin-bottom:12px;">
+        <img src="/icon.svg?v=5" alt="SR" style="width:58px;height:58px;border-radius:15px;box-shadow:0 8px 24px rgba(16,185,129,.35);margin-bottom:6px;" />
+        <h2 style="font-size:19px;color:#fff;margin-bottom:4px;">Saifu AI me Aapka Swagat Hai! ✨</h2>
+        <p style="font-size:12.5px;color:#9aa3b2;">Apna personal smart assistant, tutor aur kitchen guide</p>
+      </div>
+
+      <div style="background:#101318;border:1px solid #28303e;border-radius:12px;padding:12px;margin-bottom:14px;font-size:13px;line-height:1.6;color:#e2e8f0;">
+        <div style="font-weight:700;color:#38bdf8;margin-bottom:6px;">✨ Free Sign Up Ke Zabardast Fayde:</div>
+        <div style="display:flex;gap:8px;margin-bottom:5px;"><span>💾</span><span><b>Lifetime Chat History:</b> Phone badalne par bhi chats safe rahengi.</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:5px;"><span>📱</span><span><b>Cross-Device Sync:</b> Mobile, Tablet ya Laptop kisi me bhi kholo.</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:5px;"><span>☀️</span><span><b>Daily 9 AM Vibes:</b> Roz subah ek naya positive thought aapke naam se.</span></div>
+        <div style="display:flex;gap:8px;"><span>👩‍🍳</span><span><b>Personal Kitchen & Memory:</b> Ghar ka setup aur diet plan auto-save rahega.</span></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn-primary" style="padding:11px;font-size:14px;font-weight:700;" onclick="closeModal('welcomeBenefitModal');openAuthModal('signup')">🚀 Free Sign Up Karein (10 Second)</button>
+        <button class="btn-secondary" style="padding:9px;font-size:13px;border-color:#10a37f;color:#34d399;" onclick="installApp()">📲 Download / Install Saifu App</button>
+        <button class="guest-btn" style="margin-top:2px;padding:8px;" onclick="closeModal('welcomeBenefitModal')">💬 Abhi Guest ki tarah chat karein</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="annModal">
     <div class="modal ann-card">
       <div style="font-size:32px;margin-bottom:6px;">📢</div>
       <h2 id="annTitle" style="color:#34d399;margin-bottom:8px;">New Update</h2>
@@ -721,6 +750,14 @@
 
     // Startup Announcement Check
     let activeAnnId = "";
+        async function showWelcomePopupIfNeeded() {
+      if (!currentUser && !sessionStorage.getItem("seen_welcome_popup")) {
+        sessionStorage.setItem("seen_welcome_popup", "1");
+        setTimeout(() => {
+          document.getElementById("welcomeBenefitModal").classList.add("open");
+        }, 600);
+      }
+    }
     async function checkAnnouncement() {
       try {
         const d = await (await fetch("/api/announcement")).json();
@@ -1031,6 +1068,7 @@
         if (!res.ok) { err.textContent = "⚠️ " + d.error; err.style.display = "block"; return; }
         isGuest = false; await checkAnnouncement();
     initSession();
+    showWelcomePopupIfNeeded();
       } catch (e) {
         err.textContent = "⚠️ Network error — dubara tap karein."; err.style.display = "block";
       }
